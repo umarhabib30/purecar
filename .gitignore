@@ -1,0 +1,23 @@
+/.env
+/.env.*
+/.idea
+/.vscode
+/.DS_Store
+
+/vendor/
+/node_modules/
+
+# Framework caches and logs
+/bootstrap/cache/*
+/storage/*
+!/storage/.gitignore
+
+# Compiled assets and build artifacts
+/public/
+/public/hot
+/public/storage
+/public/mix-manifest.json
+
+# Tests coverage/output
+/coverage
+/reports

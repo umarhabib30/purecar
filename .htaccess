@@ -1,0 +1,19 @@
+<IfModule mod_rewrite.c>  
+   RewriteEngine On 
+   RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirect www to non-www (https only)
+    RewriteCond %{HTTPS} on
+    RewriteCond %{HTTP_HOST} ^www\.purecar\.co\.uk$ [NC]
+    RewriteRule ^(.*)$ https://purecar.co.uk/$1 [L,R=301]
+
+    # Laravel front controller
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>
