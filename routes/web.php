@@ -62,6 +62,8 @@ use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
 use App\Http\Controllers\MOTController;
 use App\Http\Controllers\BlueSkyController;
+use App\Http\Controllers\FilterSearchPageController;
+
 
 
 use App\Http\Controllers\FacebookPostController;
@@ -104,6 +106,8 @@ Route::get('/adverts/{image}', function ($image) {
         abort(404);
     }
 });
+
+Route::post('/filter', [FilterSearchPageController::class, 'filter'])->name('filter');
 
 Route::get('/get-filtered-fields', [CarController::class, 'getFilteredFields'])->name('get.filtered.fields');
 Route::get('/get-filtered-fieldssale', [CarController::class, 'getFilteredFieldssale'])->name('get.filtered.fields.sale');

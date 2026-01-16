@@ -1,5 +1,4 @@
 <style>
-
 	.custom-select-modal {
 		display: none;
 		position: fixed;
@@ -49,7 +48,8 @@
 		.display-desktop-none {
 			display: none !important;
 		}
-		.dropdown-item{
+
+        .dropdown-item {
 			padding: 18px 16px;
 			color: #0E121B !important;
 			white-space: normal !important;
@@ -61,7 +61,7 @@
 
 	@media (max-width: 768px) {
 
-		.desktop-hero-section-text{
+        .desktop-hero-section-text {
 			overflow-y: scroll !important;
 		}
 
@@ -165,13 +165,13 @@
 		.custom-select-modal .custom-select-list::-webkit-scrollbar-track {
 			background: #f1f1f1 !important;
 			border-radius: 10px !important;
-			-webkit-box-shadow: inset 0 0 2px rgba(0,0,0,0.1) !important;
+            -webkit-box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.1) !important;
 		}
 
 		.custom-select-modal .custom-select-list::-webkit-scrollbar-thumb {
 			background: #888 !important;
 			border-radius: 10px !important;
-			-webkit-box-shadow: inset 0 0 2px rgba(0,0,0,0.2) !important;
+            -webkit-box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.2) !important;
 			min-height: 30px !important;
 		}
 
@@ -225,6 +225,7 @@
 	.clear-all-link {
 		text-decoration: underline !important;
 		cursor: pointer !important;
+        padding: 10px 20px !important;
 	}
 
 	/* Hide Close button on desktop */
@@ -233,7 +234,7 @@
 			display: none !important;
 		}
 
-		.search-btn-container > div {
+        .search-btn-container>div {
 			display: flex !important;
 			align-items: center !important;
 			gap: 10px !important;
@@ -245,7 +246,7 @@
 		}
 	}
 </style>
-<form class="filter-box" method="GET" action="{{ route('search_car') }}" id="{{ $formId ?? 'desktopform' }}">
+<form class="filter-box" method="POST" action="{{ route('filter') }}" id="{{ $formId ?? 'desktopform' }}">
 	@csrf
 	<div class="filter-inner">
 		<!-- Row 1: Make, Model, Variant, Body Type, Fuel Type -->
@@ -257,14 +258,7 @@
 				<span class="dropdown-text">Make</span>
 			</button>
 			<ul class="dropdown-menu overflow-auto display-mobile-none">
-				@foreach ($search_field['make'] as $make)
-				<li class="">
-					<a class="dropdown-item" href="javascript:void(0)"
-					onclick="updateDropdownText('{{ $make->make }}', 'makeDropdown', 'makeInput')">
-					{{ $make->make }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $make->count }})
-				</a>
-			</li>
-			@endforeach
+				<li><span class="dropdown-item text-muted">Loading...</span></li>
 		</ul>
 
 
@@ -272,14 +266,7 @@
 		<div class="custom-select-modal display-desktop-none" data-modal="make">
 			<div class="custom-select-content">
 				<ul class="custom-select-list">
-					@foreach ($search_field['make'] as $make)
-					<li>
-						<a class="dropdown-item" href="javascript:void(0)"
-						onclick="updateDropdownText('{{ $make->make }}', 'makeDropdown', 'makeInput')">
-						{{ $make->make }} ({{ $make->count }})
-					</a>
-				</li>
-				@endforeach
+					<li><span class="dropdown-item text-muted">Loading...</span></li>
 			</ul>
 		</div>
 	</div>
@@ -297,12 +284,7 @@
 		<span class="dropdown-text">Model</span>
 	</button>
 	<ul class="dropdown-menu ove display-mobile-none" id="modelList">
-		<li>
-			<a class="dropdown-item" href="javascript:void(0)"
-			onclick="updateDropdownText('Any', 'modelDropdown', 'modelInput')">
-
-		</a>
-	</li>
+		<li><span class="dropdown-item text-muted">Loading...</span></li>
 </ul>
 </div>
 
@@ -315,12 +297,7 @@
 <div class="custom-select-modal display-desktop-none" data-modal="model">
 	<div class="custom-select-content">
 		<ul class="custom-select-list" id="modelListMobile">
-			<li>
-				<a class="dropdown-item" href="javascript:void(0)"
-				onclick="updateDropdownText('Any', 'modelDropdown', 'modelInput')">
-				Any
-			</a>
-		</li>
+			<li><span class="dropdown-item text-muted">Loading...</span></li>
 	</ul>
 </div>
 </div>
@@ -338,12 +315,7 @@
 		<span class="dropdown-text">Variant</span>
 	</button>
 	<ul class="dropdown-menu overflow-auto mobile-menu" id="variantList">
-		<li>
-			<a class="dropdown-item" href="javascript:void(0)"
-			onclick="updateDropdownText('Any', 'variantDropdown', 'variantInput')">
-
-		</a>
-	</li>
+		<li><span class="dropdown-item text-muted">Loading...</span></li>
 </ul>
 </div>
 
@@ -356,7 +328,7 @@
 		<!--               <ul class="custom-select-list" id="variantListMobile">-->
 			<!--                   <li>-->
 				<!--                       <a class="dropdown-item" href="javascript:void(0)"-->
-					<!--                       onclick="updateDropdownText('Any', 'variantDropdown', 'variantInput')">-->
+            <!-- removed updateDropdownText inline call -->
 
 					<!--                       </a>-->
 					<!--                   </li>-->
@@ -377,16 +349,7 @@
 						<span class="dropdown-text">Body Type</span>
 					</button>
 					<ul class="dropdown-menu mobile-menu overflow-auto" id="bodytypeList">
-						@if (isset($search_field['body_type']))
-						@foreach ($search_field['body_type'] as $body_type)
-						<li>
-							<a class="dropdown-item" href="javascript:void(0)"
-							onclick="updateDropdownText('{{ $body_type->body_type }}', 'bodytypeDropdown', 'bodytypeInput')">
-							{{ $body_type->body_type }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $body_type->count }})
-						</a>
-					</li>
-					@endforeach
-					@endif
+						<li><span class="dropdown-item text-muted">Loading...</span></li>
 				</ul>
 			</div>
 			<input type="hidden" name="body_type" id="bodytypeInput" value="">
@@ -402,28 +365,7 @@
 				<span class="dropdown-text">Max Miles</span>
 			</button>
 			<ul class="dropdown-menu overflow-auto mobile-menu" id="maxmilesList">
-				@php
-				$mileRanges = [
-				['label' => 'Up to 10,000', 'value' => 10000],
-				['label' => 'Up to 20,000', 'value' => 20000],
-				['label' => 'Up to 30,000', 'value' => 30000],
-				['label' => 'Up to 40,000', 'value' => 40000],
-				['label' => 'Up to 50,000', 'value' => 50000],
-				['label' => 'Up to 60,000', 'value' => 60000],
-				['label' => 'Up to 70,000', 'value' => 70000],
-				['label' => 'Up to 80,000', 'value' => 80000],
-				['label' => 'Up to 90,000', 'value' => 90000],
-				['label' => 'Up to 100,000', 'value' => 100000],
-				];
-				@endphp
-				@foreach ($mileRanges as $range)
-				<li>
-					<a class="dropdown-item" href="javascript:void(0)"
-					onclick="updateDropdownText('{{ $range['value'] }}', 'maxmilesDropdown', 'maxmilesInput', '{{ $range['label'] }}')">
-					{{ $range['label'] }}
-				</a>
-			</li>
-			@endforeach
+				<li><span class="dropdown-item text-muted">Loading...</span></li>
 		</ul>
 	</div>
 	<input type="hidden" name="miles" id="maxmilesInput" value="">
@@ -439,14 +381,7 @@
 		<span class="dropdown-text">Price From</span>
 	</button>
 	<ul class="dropdown-menu overflow-auto display-mobile-none" id="pricefromDropdownList">
-		@foreach ($price_counts as $price_range)
-		<li>
-			<a class="dropdown-item" href="javascript:void(0)"
-			onclick="updateDropdownText('{{ $price_range['min'] }}', 'pricefromDropdown', 'pricefromInput', '£{{ number_format($price_range['min']) }}')">
-			£{{ number_format($price_range['min']) }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $price_range['count'] }})
-		</a>
-	</li>
-	@endforeach
+		<li><span class="dropdown-item text-muted">Loading...</span></li>
 </ul>
 </div>
 
@@ -459,14 +394,7 @@
 <div class="custom-select-modal display-desktop-none" data-modal="price-from">
 	<div class="custom-select-content">
 		<ul class="custom-select-list">
-			@foreach ($price_counts as $price_range)
-			<li>
-				<a class="dropdown-item" href="javascript:void(0)"
-				onclick="updateDropdownText('{{ $price_range['min'] }}', 'pricefromDropdown', 'pricefromInput', '£{{ number_format($price_range['min']) }}')">
-				£{{ number_format($price_range['min']) }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $price_range['count'] }})
-			</a>
-		</li>
-		@endforeach
+			<li><span class="dropdown-item text-muted">Loading...</span></li>
 	</ul>
 </div>
 </div>
@@ -484,14 +412,7 @@
 		<span class="dropdown-text">Price To</span>
 	</button>
 	<ul class="dropdown-menu overflow-auto display-mobile-none" id="priceDropdownList">
-		@foreach ($price_counts as $price_range)
-		<li>
-			<a class="dropdown-item" href="javascript:void(0)"
-			onclick="updateDropdownText('{{ $price_range['max'] }}', 'pricetoDropdown', 'pricetoInput', '£{{ number_format($price_range['max']) }}')">
-			£{{ number_format($price_range['max']) }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $price_range['count'] }})
-		</a>
-	</li>
-	@endforeach
+		<li><span class="dropdown-item text-muted">Loading...</span></li>
 </ul>
 </div>
 
@@ -503,14 +424,7 @@
 <div class="custom-select-modal display-desktop-none" data-modal="price-to">
 	<div class="custom-select-content">
 		<ul class="custom-select-list">
-			@foreach ($price_counts as $price_range)
-			<li>
-				<a class="dropdown-item" href="javascript:void(0)"
-				onclick="updateDropdownText('{{ $price_range['max'] }}', 'pricetoDropdown', 'pricetoInput', '£{{ number_format($price_range['max']) }}')">
-				£{{ number_format($price_range['max']) }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $price_range['count'] }})
-			</a>
-		</li>
-		@endforeach
+			<li><span class="dropdown-item text-muted">Loading...</span></li>
 	</ul>
 </div>
 </div>
@@ -528,25 +442,7 @@
 		<span class="dropdown-text">Year From</span>
 	</button>
 	<ul class="dropdown-menu overflow-auto display-mobile-none" id="yearfromDropdown">
-		@if (isset($year_ranges))
-		@foreach ($year_ranges as $year)
-		<li>
-			<a class="dropdown-item" href="javascript:void(0)"
-			onclick="updateDropdownText('{{ $year }}', 'yearfromDropdown', 'yearfromInput', '{{ $year }}')">
-			{{ $year }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $year_counts[$year] ?? 0 }})
-		</a>
-	</li>
-	@endforeach
-	@else
-	@foreach ($year_counts as $year_range)
-	<li>
-		<a class="dropdown-item" href="javascript:void(0)"
-		onclick="updateDropdownText('{{ $year_range['year'] }}', 'yearfromDropdown', 'yearfromInput', '{{ $year_range['year'] }}')">
-		{{ $year_range['year'] }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $year_range['count'] }})
-	</a>
-</li>
-@endforeach
-@endif
+		<li><span class="dropdown-item text-muted">Loading...</span></li>
 </ul>
 </div>
 
@@ -559,25 +455,7 @@
 <div class="custom-select-modal display-desktop-none" data-modal="year-from">
 	<div class="custom-select-content">
 		<ul class="custom-select-list">
-			@if (isset($year_ranges))
-			@foreach ($year_ranges as $year)
-			<li>
-				<a class="dropdown-item" href="javascript:void(0)"
-				onclick="updateDropdownText('{{ $year }}', 'yearFromDropdown', 'yearfromInput', '{{ $year }}')">
-				{{ $year }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $year_counts[$year] ?? 0 }})
-			</a>
-		</li>
-		@endforeach
-		@else
-		@foreach ($year_counts as $year_range)
-		<li>
-			<a class="dropdown-item" href="javascript:void(0)"
-			onclick="updateDropdownText('{{ $year_range['year'] }}', 'yearFromDropdown', 'yearfromInput', '{{ $year_range['year'] }}')">
-			{{ $year_range['year'] }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $year_range['count'] }})
-		</a>
-	</li>
-	@endforeach
-	@endif
+			<li><span class="dropdown-item text-muted">Loading...</span></li>
 </ul>
 </div>
 </div>
@@ -600,25 +478,7 @@
 		<span class="dropdown-text">Year To</span>
 	</button>
 	<ul class="dropdown-menu overflow-auto display-mobile-none" id="yearToDropdownList">
-		@if (isset($year_ranges))
-		@foreach ($year_ranges as $year)
-		<li>
-			<a class="dropdown-item" href="javascript:void(0)"
-			onclick="updateDropdownText('{{ $year }}', 'yeartoDropdown', 'yeartoInput', '{{ $year }}')">
-			{{ $year }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $year_counts[$year] ?? 0 }})
-		</a>
-	</li>
-	@endforeach
-	@else
-	@foreach ($year_counts as $year_range)
-	<li>
-		<a class="dropdown-item" href="javascript:void(0)"
-		onclick="updateDropdownText('{{ $year_range['year'] }}', 'yeartoDropdown', 'yeartoInput', '{{ $year_range['year'] }}')">
-		{{ $year_range['year'] }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $year_range['count'] }})
-	</a>
-</li>
-@endforeach
-@endif
+		<li><span class="dropdown-item text-muted">Loading...</span></li>
 </ul>
 </div>
 
@@ -633,25 +493,7 @@
 <div class="custom-select-modal display-desktop-none" data-modal="year-to">
 	<div class="custom-select-content">
 		<ul class="custom-select-list">
-			@if (isset($year_ranges))
-			@foreach ($year_ranges as $year)
-			<li>
-				<a class="dropdown-item" href="javascript:void(0)"
-				onclick="updateDropdownText('{{ $year }}', 'yearToDropdown', 'yeartoInput', '{{ $year }}')">
-				{{ $year }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $year_counts[$year] ?? 0 }})
-			</a>
-		</li>
-		@endforeach
-		@else
-		@foreach ($year_counts as $year_range)
-		<li>
-			<a class="dropdown-item" href="javascript:void(0)"
-			onclick="updateDropdownText('{{ $year_range['year'] }}', 'yearToDropdown', 'yeartoInput', '{{ $year_range['year'] }}')">
-			{{ $year_range['year'] }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $year_range['count'] }})
-		</a>
-	</li>
-	@endforeach
-	@endif
+			<li><span class="dropdown-item text-muted">Loading...</span></li>
 </ul>
 </div>
 </div>
@@ -672,16 +514,7 @@
 		<span class="dropdown-text">Engine Size</span>
 	</button>
 	<ul class="dropdown-menu mobile-menu overflow-auto" id="enginesizeList">
-		@if (isset($search_field['engine_size']))
-		@foreach ($search_field['engine_size'] as $engine_size)
-		<li>
-			<a class="dropdown-item" href="javascript:void(0)"
-			onclick="updateDropdownText('{{ $engine_size->engine_size }}', 'enginesizeDropdown', 'enginesizeInput')">
-			{{ $engine_size->engine_size }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $engine_size->count }})
-		</a>
-	</li>
-	@endforeach
-	@endif
+		<li><span class="dropdown-item text-muted">Loading...</span></li>
 </ul>
 </div>
 <input type="hidden" name="engine_size" id="enginesizeInput" value="">
@@ -697,16 +530,7 @@
 		<span class="dropdown-text">Fuel Type</span>
 	</button>
 	<ul class="dropdown-menu mobile-menu overflow-auto" id="fueltypeList">
-		@if (isset($search_field['fuel_type']))
-		@foreach ($search_field['fuel_type'] as $fuel_type)
-		<li>
-			<a class="dropdown-item" href="javascript:void(0)"
-			onclick="updateDropdownText('{{ $fuel_type->fuel_type }}', 'fueltypeDropdown', 'fueltypeInput')">
-			{{ $fuel_type->fuel_type }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $fuel_type->count }})
-		</a>
-	</li>
-	@endforeach
-	@endif
+		<li><span class="dropdown-item text-muted">Loading...</span></li>
 </ul>
 </div>
 <input type="hidden" name="fuel_type" id="fueltypeInput" value="">
@@ -721,19 +545,10 @@
 		<span class="dropdown-text">Gearbox</span>
 	</button>
 	<ul class="dropdown-menu mobile-menu overflow-auto" id="gearboxList">
-		@if (isset($search_field['gear_box']))
-		@foreach ($search_field['gear_box'] as $gear_box)
-		<li>
-			<a class="dropdown-item" href="javascript:void(0)"
-			onclick="updateDropdownText('{{ $gear_box->gear_box }}', 'gearboxDropdown', 'gearboxInput')">
-			{{ $gear_box->gear_box }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $gear_box->count }})
-		</a>
-	</li>
-	@endforeach
-	@endif
+		<li><span class="dropdown-item text-muted">Loading...</span></li>
 </ul>
 </div>
-<input type="hidden" name="transmission_type" id="gearboxInput" value="">
+            <input type="hidden" name="gear_box" id="gearboxInput" value="">
 </div>
 
 
@@ -745,16 +560,7 @@
 		<span class="dropdown-text">Doors</span>
 	</button>
 	<ul class="dropdown-menu mobile-menu overflow-auto" id="doorsList">
-		@if (isset($search_field['doors']))
-		@foreach ($search_field['doors'] as $door)
-		<li>
-			<a class="dropdown-item" href="javascript:void(0)"
-			onclick="updateDropdownText('{{ $door->doors }}', 'doorsDropdown', 'doorsInput')">
-			{{ $door->doors }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $door->count }})
-		</a>
-	</li>
-	@endforeach
-	@endif
+		<li><span class="dropdown-item text-muted">Loading...</span></li>
 </ul>
 </div>
 <input type="hidden" name="doors" id="doorsInput" value="">
@@ -768,16 +574,7 @@
 		<span class="dropdown-text">Colors</span>
 	</button>
 	<ul class="dropdown-menu mobile-menu overflow-auto" id="colorsList">
-		@if (isset($search_field['colors']))
-		@foreach ($search_field['colors'] as $color)
-		<li>
-			<a class="dropdown-item" href="javascript:void(0)"
-			onclick="updateDropdownText('{{ $color->colors }}', 'colorsDropdown', 'colorsInput')">
-			{{ $color->colors }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $color->count }})
-		</a>
-	</li>
-	@endforeach
-	@endif
+		<li><span class="dropdown-item text-muted">Loading...</span></li>
 </ul>
 </div>
 <input type="hidden" name="colors" id="colorsInput" value="">
@@ -791,16 +588,7 @@
 		<span class="dropdown-text">Seller Type</span>
 	</button>
 	<ul class="dropdown-menu mobile-menu overflow-auto" id="sellertypeList">
-		@if (isset($search_field['seller_type']))
-		@foreach ($search_field['seller_type'] as $seller)
-		<li>
-			<a class="dropdown-item" href="javascript:void(0)"
-			onclick="updateDropdownText('{{ $seller->original_seller_type }}', 'sellertypeDropdown', 'sellertypeInput', '{{ $seller->seller_type }}')">
-			{{ $seller->seller_type }}&nbsp;&nbsp;&nbsp;&nbsp;({{ $seller->count }})
-		</a>
-	</li>
-	@endforeach
-	@endif
+		<li><span class="dropdown-item text-muted">Loading...</span></li>
 </ul>
 </div>
 <input type="hidden" name="seller_type" id="sellertypeInput" value="">
@@ -851,8 +639,7 @@ Less Filters
 </button>
 <div class="d-flex align-items-center gap-2 search-btn-container">
 	<div class="d-flex align-items-center gap-2 mobile-buttons-container">
-		<a onclick="closeSearchForm()" class="clear-all-link display-mobile-only">Close</a>
-		<a onclick="clearFilters()" class="clear-all-link">Clear all</a>
+                <button type="reset" class="btn btn-link clear-all-link p-0">Clear all</button>
 	</div>
 	<button type="submit" id="searchButton" class="btn btn-dark search-btn">Search</button>
 </div>
@@ -860,210 +647,479 @@ Less Filters
 </form>
 
 <script>
-	(function() {
-
-		document.addEventListener('click', function(e) {
-			const item = e.target.closest('.dropdown-item');
-			if (!item) return;
-
-
-			const parentDropdown = item.closest('.dropdown-menu') || item.closest('.custom-select-list');
-			parentDropdown
-			.querySelectorAll('.dropdown-item')
-			.forEach(i => i.classList.remove('selected-option'));
-			item.classList.add('selected-option');
-
-
-			const customModel = e.target.closest('.custom-select-modal');
-			if (customModel) {
-				customModel.style.display = 'none';
-				return;
-			}
-
-		});
-
-
-		const advancedFilterRows = document.querySelectorAll('.advanced-filter-row');
-		const moreFiltersBtn = document.getElementById('moreFiltersBtn');
-		const lessFiltersBtn = document.getElementById('lessFiltersBtn');
-
-		function toggleAdvancedFilters(show) {
-			const displayValue = show ? 'flex' : 'none';
-
-			advancedFilterRows.forEach(function(filter) {
-				filter.style.display = displayValue;
-			});
-
-			if (moreFiltersBtn) {
-				moreFiltersBtn.style.display = show ? 'none' : 'inline-flex';
-			}
-
-			if (lessFiltersBtn) {
-				lessFiltersBtn.style.display = show ? 'inline-flex' : 'none';
-			}
-		}
-
-		window.showMoreFilters = function() {
-			toggleAdvancedFilters(true);
-			return false;
-		};
-
-		window.showLessFilters = function() {
-			toggleAdvancedFilters(false);
-			return false;
-		};
-	})();
-
-    // Add "open" class to dropdown when dropdown-menu has "show" class
-    (function() {
-    	const dropdownMenus = document.querySelectorAll('.dropdown-menu');
-
-    	dropdownMenus.forEach(function(menu) {
-    		const dropdown = menu.closest('.dropdown');
-    		if (!dropdown) return;
-
-    		const observer = new MutationObserver(function(mutations) {
-    			mutations.forEach(function(mutation) {
-    				if (mutation.type === 'attributes' && mutation.attributeName ===
-    					'class') {
-    					if (menu.classList.contains('show')) {
-    						dropdown.classList.add('open');
-    					} else {
-    						dropdown.classList.remove('open');
-    					}
-    				}
-    			});
-    		});
-
-    		observer.observe(menu, {
-    			attributes: true,
-    			attributeFilter: ['class']
-    		});
-
-            // Check initial state
-            if (menu.classList.contains('show')) {
-            	dropdown.classList.add('open');
-            }
-        });
-    })();
-
-
-    document.addEventListener('DOMContentLoaded', function() {
-
-    	const dropdownButtons = document.querySelectorAll('.dropdown-toggle');
-    	const modals = document.querySelectorAll('.custom-select-modal');
-
-        // Function to force scrollbar visibility on a modal
-        function forceScrollbarVisibility(modal) {
-        	const list = modal.querySelector('.custom-select-list');
-        	if (list && modal.style.display === 'flex') {
-        		list.style.overflowY = 'scroll';
-        		list.style.scrollbarWidth = 'thin';
-
-        		requestAnimationFrame(() => {
-        			const currentScroll = list.scrollTop;
-        			list.scrollTop = 1;
-        			list.scrollTop = 0;
-
-        			if (list.scrollHeight > list.clientHeight) {
-        				list.style.paddingRight = '8px';
-        			}
-
-        			setTimeout(() => {
-        				list.dispatchEvent(new Event('scroll'));
-        				if (list.scrollHeight > list.clientHeight) {
-        					list.scrollTop = 1;
-        					setTimeout(() => {
-        						list.scrollTop = 0;
-        					}, 50);
-        				}
-        			}, 150);
-        		});
-        	}
+    // Minimal JS kept for:
+    // - Custom dropdown UI (hidden inputs)
+    // - More/Less filters toggle
+    // - AJAX: after any filter selection, POST to /filter and rebuild ALL dropdown option lists with counts
+    document.addEventListener('DOMContentLoaded', function () {
+        function isMobile() {
+            return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
         }
 
-        dropdownButtons.forEach(button => {
-        	if (button.dataset.model == "false") return;
-        	button.addEventListener('click', function(e) {
-        		const filterName = button.dataset.dropdown;
+        function initDefaultDropdownText(form) {
+            form.querySelectorAll('.dropdown-toggle .dropdown-text').forEach(function (span) {
+                if (!span.dataset.defaultText) {
+                    span.dataset.defaultText = span.textContent || '';
+                }
+            });
+        }
 
-        		modals.forEach(modal => {
-        			if (modal.dataset.modal === filterName) {
-                        // Toggle the corresponding modal
-                        modal.style.display = modal.style.display === 'flex' ? 'none' :
-                        'flex';
-                        
-                        // Force scrollbar to be visible on mobile
-                        if (modal.style.display === 'flex') {
-                        	setTimeout(() => {
-                        		forceScrollbarVisibility(modal);
-                        	}, 50);
-                        }
-                    } else {
-                        modal.style.display = 'none'; // hide others
-                    }
+        function hydrateFormFromUrl(form) {
+            const qs = window.location && window.location.search ? window.location.search : '';
+            const params = new URLSearchParams(qs);
+            if (!params || Array.from(params.keys()).length === 0) return false;
+
+            const mappings = [
+                { param: 'make', inputId: 'makeInput', buttonId: 'makeDropdown' },
+                { param: 'model', inputId: 'modelInput', buttonId: 'modelDropdown' },
+                { param: 'variant', inputId: 'variantInput', buttonId: 'variantDropdown' },
+                { param: 'body_type', inputId: 'bodytypeInput', buttonId: 'bodytypeDropdown' },
+                { param: 'engine_size', inputId: 'enginesizeInput', buttonId: 'enginesizeDropdown' },
+                { param: 'fuel_type', inputId: 'fueltypeInput', buttonId: 'fueltypeDropdown' },
+                { param: 'gear_box', inputId: 'gearboxInput', buttonId: 'gearboxDropdown' },
+                { param: 'doors', inputId: 'doorsInput', buttonId: 'doorsDropdown' },
+                { param: 'colors', inputId: 'colorsInput', buttonId: 'colorsDropdown' },
+                { param: 'seller_type', inputId: 'sellertypeInput', buttonId: 'sellertypeDropdown' },
+                { param: 'price_from', inputId: 'pricefromInput', buttonId: 'pricefromDropdown', format: formatGBP },
+                { param: 'price_to', inputId: 'pricetoInput', buttonId: 'pricetoDropdown', format: formatGBP },
+                { param: 'year_from', inputId: 'yearfromInput', buttonId: 'yearfromDropdown' },
+                { param: 'year_to', inputId: 'yeartoInput', buttonId: 'yeartoDropdown' },
+                { param: 'miles', inputId: 'maxmilesInput', buttonId: 'maxmilesDropdown', format: function (v) {
+                    const num = Number(v);
+                    return Number.isFinite(num) ? ('Up to ' + num.toLocaleString('en-GB')) : String(v);
+                } },
+            ];
+
+            let hydrated = false;
+
+            mappings.forEach(function (m) {
+                if (!params.has(m.param)) return;
+                const v = params.get(m.param);
+                if (v === null || v === '') return;
+
+                const input = form.querySelector('#' + m.inputId);
+                if (input) input.value = String(v);
+
+                // Try to select the existing option in the list (keeps labels consistent)
+                let match = null;
+                form.querySelectorAll('.dropdown-item[data-dd-input="' + m.inputId + '"]').forEach(function (item) {
+                    if (String(item.getAttribute('data-dd-value') || '') === String(v)) match = item;
                 });
-        	});
-        });
 
-        // Close modal on clicking outside
-        modals.forEach(modal => {
-        	modal.addEventListener('click', function(e) {
-        		if (e.target === modal) {
-        			modal.style.display = 'none';
-        		}
-        	});
-        });
+                if (match) {
+                    applyDropdownItemSelection(match);
+                } else {
+                    // Fallback: set button label if option isn't present yet
+                    const btn = form.querySelector('#' + m.buttonId);
+                    const span = btn ? (btn.querySelector('.dropdown-text') || btn.querySelector('span')) : null;
+                    if (span) {
+                        if (!span.dataset.defaultText) span.dataset.defaultText = span.textContent || '';
+                        span.textContent = m.format ? m.format(v) : String(v);
+                    }
+                }
 
-        // Watch for modal visibility changes
-        modals.forEach(modal => {
-        	const observer = new MutationObserver(function(mutations) {
-        		mutations.forEach(function(mutation) {
-        			if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-        				if (modal.style.display === 'flex') {
-        					forceScrollbarVisibility(modal);
-        				}
-        			}
-        		});
-        	});
+                hydrated = true;
+            });
 
-        	observer.observe(modal, {
-        		attributes: true,
-        		attributeFilter: ['style']
-        	});
-        });
-
-        // Force scrollbars on any currently visible modals
-        modals.forEach(modal => {
-        	if (modal.style.display === 'flex') {
-        		forceScrollbarVisibility(modal);
-        	}
-        });
-
-    });
-
-    // Function to close the search form (for mobile modal context)
-    window.closeSearchForm = function() {
-        // Close any open custom modals
-        const modals = document.querySelectorAll('.custom-select-modal');
-        modals.forEach(modal => {
-        	modal.style.display = 'none';
-        });
-
-        // Close mobile search form if it exists
-        const mobileSearchForm = document.getElementById('mobileSearchForm');
-        if (mobileSearchForm) {
-        	mobileSearchForm.classList.remove('show');
-        	document.body.classList.remove('no-scroll');
+            return hydrated;
         }
 
-        // Close any Bootstrap modals if present
-        const bootstrapModals = document.querySelectorAll('.modal.show');
-        bootstrapModals.forEach(modal => {
-        	const bsModal = bootstrap.Modal.getInstance(modal);
-        	if (bsModal) {
-        		bsModal.hide();
+        function getCsrfToken(form) {
+            return (
+                form.querySelector('input[name="_token"]')?.value ||
+                document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+                ''
+            );
+        }
+
+        function formatGBP(n) {
+            const num = Number(n);
+            if (!Number.isFinite(num)) return String(n);
+            return '£' + Math.round(num).toLocaleString('en-GB');
+        }
+
+        function normalizeFacetMap(facet) {
+            if (!facet || typeof facet !== 'object') return [];
+            if (Array.isArray(facet)) return facet;
+
+            // { value: count } -> [{ value, count }]
+            return Object.keys(facet).map(function (k) {
+                return { value: String(k), count: Number(facet[k] || 0) };
+            });
+        }
+
+        function sortByCountDesc(items) {
+            return items
+                .filter(function (i) {
+                    const v = (i && (i.value ?? i.k)) ?? '';
+                    return v !== '' && v !== null && v !== undefined && String(v) !== 'N/A';
+                })
+                .map(function (i) {
+                    if (i && typeof i === 'object' && 'value' in i) return i;
+                    return { value: String(i), count: 0 };
+                })
+                .sort(function (a, b) {
+                    if ((b.count || 0) !== (a.count || 0)) return (b.count || 0) - (a.count || 0);
+                    return String(a.value).localeCompare(String(b.value));
+                });
+        }
+
+        function applyDropdownItemSelection(item) {
+            const targetId = item.getAttribute('data-dd-target');
+            const inputId = item.getAttribute('data-dd-input');
+            if (!targetId || !inputId) return;
+
+            const rawValue = item.getAttribute('data-dd-value');
+            const value = rawValue === null ? '' : String(rawValue);
+            const text = String(item.getAttribute('data-dd-text') || value);
+            const shouldClear = item.hasAttribute('data-dd-clear') || value === '' || value === 'Any';
+
+            const form = item.closest('form.filter-box');
+            const btn = form ? form.querySelector('#' + targetId) : document.getElementById(targetId);
+            const span = btn ? (btn.querySelector('.dropdown-text') || btn.querySelector('span')) : null;
+            const input = form ? form.querySelector('#' + inputId) : document.getElementById(inputId);
+
+            if (span && !span.dataset.defaultText) {
+                span.dataset.defaultText = span.textContent || '';
+            }
+
+            if (input) input.value = shouldClear ? '' : value;
+            if (span) span.textContent = shouldClear ? (span.dataset.defaultText || '') : text;
+
+            // visual selection state
+            const parentList = item.closest('.dropdown-menu') || item.closest('.custom-select-list');
+            if (parentList) {
+                parentList.querySelectorAll('.dropdown-item').forEach(function (i) {
+                    i.classList.remove('selected-option');
+                });
+            }
+            item.classList.add('selected-option');
+
+            // close modal if clicked inside a custom modal list
+            const modal = item.closest('.custom-select-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function buildDropdownItem(cfg, value, text, count, isClear) {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.className = 'dropdown-item';
+            a.href = 'javascript:void(0)';
+            a.setAttribute('data-dd-target', cfg.buttonId);
+            a.setAttribute('data-dd-input', cfg.inputId);
+            a.setAttribute('data-dd-value', value);
+            a.setAttribute('data-dd-text', text);
+            if (isClear) a.setAttribute('data-dd-clear', '1');
+            a.textContent = count === null ? text : (text + ' (' + Number(count || 0) + ')');
+            li.appendChild(a);
+            return li;
+        }
+
+        function rebuildLists(form, cfg, items, labelFn) {
+            const input = form.querySelector('#' + cfg.inputId);
+            let selectedValue = input ? String(input.value || '') : '';
+
+            const btn = form.querySelector('#' + cfg.buttonId);
+            const btnSpan = btn ? (btn.querySelector('.dropdown-text') || btn.querySelector('span')) : null;
+            const dropdownRoot = btn ? btn.closest('.dropdown') : null;
+            const desktopList = dropdownRoot ? dropdownRoot.querySelector('.dropdown-menu') : null;
+            const mobileList = cfg.modalKey
+                ? form.querySelector('.custom-select-modal[data-modal="' + cfg.modalKey + '"] .custom-select-list')
+                : null;
+
+            // Enable/disable if configured
+            if (btn && cfg.disableWhenEmpty) {
+                btn.disabled = items.length === 0;
+            }
+
+            // Rebuild list function
+            function rebuild(listEl) {
+                if (!listEl) return;
+                listEl.innerHTML = '';
+
+                if (cfg.clearText) {
+                    listEl.appendChild(buildDropdownItem(cfg, '', cfg.clearText, null, true));
+                }
+
+                const seen = new Set();
+                if (selectedValue) {
+                    const hasSelected = items.some(function (i) { return String(i.value) === selectedValue; });
+                    if (!hasSelected) {
+                        // Selection is no longer valid under current filters → clear it.
+                        if (input) input.value = '';
+                        selectedValue = '';
+
+                        if (btnSpan) {
+                            if (!btnSpan.dataset.defaultText) btnSpan.dataset.defaultText = btnSpan.textContent || '';
+                            btnSpan.textContent = btnSpan.dataset.defaultText || '';
+                        }
+                    }
+                }
+
+                items.forEach(function (i) {
+                    const v = String(i.value);
+                    if (!v || v === 'N/A') return;
+                    if (seen.has(v)) return;
+                    listEl.appendChild(buildDropdownItem(cfg, v, labelFn(v), i.count, false));
+                    seen.add(v);
+                });
+            }
+
+            rebuild(desktopList);
+            rebuild(mobileList);
+        }
+
+        function applyFacetsToForm(form, facets) {
+            if (!facets || typeof facets !== 'object') return;
+
+            const configs = {
+                make: { facetKey: 'make', buttonId: 'makeDropdown', inputId: 'makeInput', modalKey: 'make', clearText: 'Any' },
+                model: { facetKey: 'model', buttonId: 'modelDropdown', inputId: 'modelInput', modalKey: 'model', clearText: 'Any', disableWhenEmpty: true },
+                variant: { facetKey: 'variant', buttonId: 'variantDropdown', inputId: 'variantInput', modalKey: null, clearText: 'Any', disableWhenEmpty: true },
+                body_type: { facetKey: 'body_type', buttonId: 'bodytypeDropdown', inputId: 'bodytypeInput', modalKey: null, clearText: 'Any' },
+                engine_size: { facetKey: 'engine_size', buttonId: 'enginesizeDropdown', inputId: 'enginesizeInput', modalKey: null, clearText: 'Any' },
+                fuel_type: { facetKey: 'fuel_type', buttonId: 'fueltypeDropdown', inputId: 'fueltypeInput', modalKey: null, clearText: 'Any' },
+                gear_box: { facetKey: 'gear_box', buttonId: 'gearboxDropdown', inputId: 'gearboxInput', modalKey: null, clearText: 'Any' },
+                doors: { facetKey: 'doors', buttonId: 'doorsDropdown', inputId: 'doorsInput', modalKey: null, clearText: 'Any' },
+                colors: { facetKey: 'colors', buttonId: 'colorsDropdown', inputId: 'colorsInput', modalKey: null, clearText: 'Any' },
+                seller_type: { facetKey: 'seller_type', buttonId: 'sellertypeDropdown', inputId: 'sellertypeInput', modalKey: null, clearText: 'Any' },
+            };
+
+            Object.keys(configs).forEach(function (k) {
+                const cfg = configs[k];
+                const items = sortByCountDesc(normalizeFacetMap(facets[cfg.facetKey]));
+                rebuildLists(form, cfg, items, function (value) {
+                    if (cfg.facetKey === 'seller_type') {
+                        if (value === 'private_seller') return 'Private';
+                        if (value === 'car_dealer') return 'Dealer';
+                    }
+                    return String(value);
+                });
+            });
+
+            // Year (used by year-from + year-to)
+            if (facets.year && typeof facets.year === 'object') {
+                const yearItems = Object.keys(facets.year)
+                    .map(function (y) { return { value: String(y), count: Number(facets.year[y] || 0) }; })
+                    .filter(function (i) { return (i.count || 0) >= 1; })
+                    .sort(function (a, b) { return Number(b.value) - Number(a.value); });
+
+                rebuildLists(form, { facetKey: 'year', buttonId: 'yearfromDropdown', inputId: 'yearfromInput', modalKey: 'year-from', clearText: 'Any' }, yearItems, function (v) { return String(v); });
+                rebuildLists(form, { facetKey: 'year', buttonId: 'yeartoDropdown', inputId: 'yeartoInput', modalKey: 'year-to', clearText: 'Any' }, yearItems, function (v) { return String(v); });
+            }
+
+            // Price (used by price-from + price-to)
+            if (Array.isArray(facets.price)) {
+                const fromItems = facets.price
+                    .map(function (r) { return { value: String(r.min), count: Number(r.count || 0) }; })
+                    .filter(function (i) { return (i.count || 0) >= 1; });
+                const toItems = facets.price
+                    .map(function (r) { return { value: String(r.max), count: Number(r.count || 0) }; })
+                    .filter(function (i) { return (i.count || 0) >= 1; });
+
+                rebuildLists(form, { facetKey: 'price', buttonId: 'pricefromDropdown', inputId: 'pricefromInput', modalKey: 'price-from', clearText: 'Any' }, fromItems, function (v) { return formatGBP(v); });
+                rebuildLists(form, { facetKey: 'price', buttonId: 'pricetoDropdown', inputId: 'pricetoInput', modalKey: 'price-to', clearText: 'Any' }, toItems, function (v) { return formatGBP(v); });
+            }
+
+            // Miles
+            if (Array.isArray(facets.miles)) {
+                const milesItems = facets.miles.map(function (r) {
+                    return { value: String(r.max), count: Number(r.count || 0) };
+                });
+                rebuildLists(form, { facetKey: 'miles', buttonId: 'maxmilesDropdown', inputId: 'maxmilesInput', modalKey: null, clearText: 'Any' }, milesItems, function (v) {
+                    const num = Number(v);
+                    return Number.isFinite(num) ? ('Up to ' + num.toLocaleString('en-GB')) : String(v);
+        		});
         	}
+        }
+
+        function setSearchButtonLoading(form, isLoading) {
+            const btn = form.querySelector('#searchButton');
+            if (!btn) return;
+
+            if (isLoading) {
+                if (!btn.dataset.baseHtml) btn.dataset.baseHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = 'Loading...';
+            } else {
+                if (btn.dataset.baseHtml) btn.innerHTML = btn.dataset.baseHtml;
+                btn.disabled = false;
+            }
+        }
+
+        function setSearchButtonTotal(form, total) {
+            const btn = form.querySelector('#searchButton');
+            if (!btn) return;
+            const n = Number(total);
+            if (!Number.isFinite(n)) return;
+            const next = 'Search (' + n + ')';
+            btn.dataset.baseHtml = next;
+            if (!btn.disabled) btn.innerHTML = next;
+        }
+
+        function updateForsaleResults(payload) {
+            const grid = document.getElementById('mobilelayout');
+            if (!grid) return; // only on for-sale page
+            if (!payload || typeof payload !== 'object') return;
+
+            if (typeof payload.cars_html === 'string') {
+                grid.innerHTML = payload.cars_html;
+            }
+            if ('next_page_url' in payload) {
+                grid.dataset.nextPageUrl = payload.next_page_url || '';
+            }
+
+            const totalEl = document.getElementById('forsaleTotalCount') || document.querySelector('.result-title');
+            if (totalEl && typeof payload.total !== 'undefined') {
+                totalEl.textContent = String(payload.total) + ' used cars found';
+            }
+        }
+
+        function postFilterForm(form) {
+            if (!form || !form.action) return;
+
+            const token = getCsrfToken(form);
+            const params = new URLSearchParams(new FormData(form)).toString();
+
+            setSearchButtonLoading(form, true);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open((form.method || 'POST').toUpperCase(), form.action, true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+            if (token) xhr.setRequestHeader('X-CSRF-TOKEN', token);
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState !== 4) return;
+
+                try {
+                    const contentType = xhr.getResponseHeader('content-type') || '';
+                    const payload = contentType.includes('application/json')
+                        ? JSON.parse(xhr.responseText || '{}')
+                        : null;
+
+                    if (payload && payload.facets) {
+                        applyFacetsToForm(form, payload.facets);
+                    }
+                    if (payload) {
+                        updateForsaleResults(payload);
+                        if (typeof payload.total !== 'undefined') {
+                            setSearchButtonTotal(form, payload.total);
+                        }
+                    }
+
+                    console.log('Filter response:', payload ?? xhr.responseText);
+                } catch (e) {
+                    console.log('Filter response:', xhr.responseText);
+                }
+
+                setSearchButtonLoading(form, false);
+            };
+
+            xhr.onerror = function () {
+                console.error('Filter request failed');
+                setSearchButtonLoading(form, false);
+            };
+
+            xhr.send(params);
+        }
+
+        function clearAllForm(form) {
+            if (!form) return;
+
+            // Clear hidden inputs (the actual filter values)
+            form.querySelectorAll('input[type="hidden"][name]').forEach(function (inp) {
+                // keep CSRF token
+                if (inp.name === '_token') return;
+                inp.value = '';
+            });
+
+            // Reset dropdown button labels
+            form.querySelectorAll('.dropdown-toggle .dropdown-text').forEach(function (span) {
+                span.textContent = span.dataset.defaultText || '';
+            });
+
+            // Clear selected-option styling
+            form.querySelectorAll('.dropdown-item.selected-option').forEach(function (el) {
+                el.classList.remove('selected-option');
+            });
+
+            // Re-run filter with empty values
+            postFilterForm(form);
+        }
+
+        // Delegated click handler: selecting any dropdown item updates hidden input + triggers facet refresh
+        document.addEventListener('click', function (e) {
+            const item = e.target.closest('.dropdown-item');
+            if (!item) return;
+            if (!item.hasAttribute('data-dd-target')) return;
+
+            applyDropdownItemSelection(item);
+            const form = item.closest('form.filter-box');
+            if (form) postFilterForm(form);
         });
-    };
+
+        // Mobile: open custom modal when clicking dropdown toggles that have data-dropdown
+        document.querySelectorAll('form.filter-box .dropdown-toggle[data-dropdown]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                if (!isMobile()) return;
+                const key = btn.getAttribute('data-dropdown');
+                const form = btn.closest('form.filter-box');
+                const modal = form ? form.querySelector('.custom-select-modal[data-modal="' + key + '"]') : null;
+                if (!modal) return;
+                e.preventDefault();
+                modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        	});
+        });
+
+        // Close modal by clicking backdrop
+        document.querySelectorAll('form.filter-box .custom-select-modal').forEach(function (modal) {
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) modal.style.display = 'none';
+            });
+        });
+
+        // More/Less filters toggle (per form)
+        document.querySelectorAll('form.filter-box').forEach(function (form) {
+            initDefaultDropdownText(form);
+            const didHydrate = hydrateFormFromUrl(form);
+
+            const advancedFilterRows = form.querySelectorAll('.advanced-filter-row');
+            const moreFiltersBtn = form.querySelector('#moreFiltersBtn');
+            const lessFiltersBtn = form.querySelector('#lessFiltersBtn');
+
+            function toggleAdvancedFilters(show) {
+                const displayValue = show ? 'flex' : 'none';
+                advancedFilterRows.forEach(function (row) {
+                    row.style.display = displayValue;
+                });
+                if (moreFiltersBtn) moreFiltersBtn.style.display = show ? 'none' : 'inline-flex';
+                if (lessFiltersBtn) lessFiltersBtn.style.display = show ? 'inline-flex' : 'none';
+            }
+
+            if (moreFiltersBtn) moreFiltersBtn.addEventListener('click', function () { toggleAdvancedFilters(true); });
+            if (lessFiltersBtn) lessFiltersBtn.addEventListener('click', function () { toggleAdvancedFilters(false); });
+
+            // If this form is used as the on-page search, prevent full page reload and use AJAX
+            form.addEventListener('submit', function (e) {
+                if (!document.getElementById('mobilelayout')) return;
+                e.preventDefault();
+                postFilterForm(form);
+            });
+
+            // AJAX Clear All (button/link)
+            form.querySelectorAll('button[type="reset"], .clear-all-link').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    // Prevent native reset so we can also reset labels + refresh via AJAX
+                    e.preventDefault();
+                    clearAllForm(form);
+                });
+            });
+
+            // Initial load: if URL has filters, apply them + refresh counts/options from /filter
+            // Always fetch facets/options from /filter so dropdowns are not hard-coded in Blade.
+            postFilterForm(form);
+        });
+    });
 </script>
