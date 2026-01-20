@@ -1,4 +1,9 @@
 <style>
+
+.dropdown.custom-dropdown .dropdown-menu .dropdown-item {
+	font-size: 13px !important;
+}
+
 	.custom-select-modal {
 		display: none;
 		position: fixed;
@@ -246,7 +251,7 @@
 		}
 	}
 </style>
-<form class="filter-box" method="POST" action="{{ route('filter') }}" id="{{ $formId ?? 'desktopform' }}">
+<form class="filter-box" method="POST" action="{{ route('filter') }}" data-search-url="{{ route('search_car') }}" id="{{ $formId ?? 'desktopform' }}">
 	@csrf
 	<div class="filter-inner">
 		<!-- Row 1: Make, Model, Variant, Body Type, Fuel Type -->
@@ -592,6 +597,7 @@
 </ul>
 </div>
 <input type="hidden" name="seller_type" id="sellertypeInput" value="">
+<input type="hidden" name="advanced" id="advancedInput" value="">
 </div>
 </div>
 <div class="filter-actions d-flex align-items-center justify-content-between flex-wrap gap-2 mt-4">
@@ -639,7 +645,7 @@ Less Filters
 </button>
 <div class="d-flex align-items-center gap-2 search-btn-container">
 	<div class="d-flex align-items-center gap-2 mobile-buttons-container">
-                <button type="reset" class="btn btn-link clear-all-link p-0">Clear all</button>
+                <button type="reset" class="btn btn-link clear-all-link p-0" style="text-decoration: none !important;">Clear all</button>
 	</div>
 	<button type="submit" id="searchButton" class="btn btn-dark search-btn">Search</button>
 </div>
@@ -779,12 +785,64 @@ Less Filters
             const span = btn ? (btn.querySelector('.dropdown-text') || btn.querySelector('span')) : null;
             const input = form ? form.querySelector('#' + inputId) : document.getElementById(inputId);
 
+            const prevValue = input ? String(input.value || '') : '';
+
             if (span && !span.dataset.defaultText) {
                 span.dataset.defaultText = span.textContent || '';
             }
 
             if (input) input.value = shouldClear ? '' : value;
             if (span) span.textContent = shouldClear ? (span.dataset.defaultText || '') : text;
+
+            function clearSelectionForInput(localForm, depInputId) {
+                const depInput = localForm.querySelector('#' + depInputId);
+                if (depInput) depInput.value = '';
+
+                // reset button label to default text (if it exists)
+                const depBtn = localForm.querySelector('.dropdown-toggle[data-bs-toggle="dropdown"][id][data-dropdown], .dropdown-toggle[id]');
+                // We'll set labels via explicit mapping instead (see below).
+
+                // remove selected-option styling for that input across all lists
+                localForm
+                    .querySelectorAll('.dropdown-item.selected-option[data-dd-input="' + depInputId + '"]')
+                    .forEach(function (el) { el.classList.remove('selected-option'); });
+            }
+
+            function resetButtonLabel(localForm, buttonId) {
+                const b = localForm.querySelector('#' + buttonId);
+                const s = b ? (b.querySelector('.dropdown-text') || b.querySelector('span')) : null;
+                if (!s) return;
+                s.textContent = s.dataset.defaultText || '';
+            }
+
+            function setBtnDisabled(localForm, buttonId, disabled) {
+                const b = localForm.querySelector('#' + buttonId);
+                if (b) b.disabled = !!disabled;
+            }
+
+            // Cascade behavior:
+            // - Make change clears model + variant, disables model/variant until facets re-apply
+            // - Model change clears variant, keeps variant disabled until model selected
+            if (form && inputId === 'makeInput') {
+                const nextMake = shouldClear ? '' : value;
+                if (prevValue !== nextMake) {
+                    clearSelectionForInput(form, 'modelInput');
+                    clearSelectionForInput(form, 'variantInput');
+                    resetButtonLabel(form, 'modelDropdown');
+                    resetButtonLabel(form, 'variantDropdown');
+                    setBtnDisabled(form, 'modelDropdown', true);
+                    setBtnDisabled(form, 'variantDropdown', true);
+                }
+            }
+
+            if (form && inputId === 'modelInput') {
+                const nextModel = shouldClear ? '' : value;
+                if (prevValue !== nextModel) {
+                    clearSelectionForInput(form, 'variantInput');
+                    resetButtonLabel(form, 'variantDropdown');
+                    setBtnDisabled(form, 'variantDropdown', true);
+                }
+            }
 
             // visual selection state
             const parentList = item.closest('.dropdown-menu') || item.closest('.custom-select-list');
@@ -923,14 +981,29 @@ Less Filters
 
             // Miles
             if (Array.isArray(facets.miles)) {
-                const milesItems = facets.miles.map(function (r) {
-                    return { value: String(r.max), count: Number(r.count || 0) };
-                });
+                const milesItems = facets.miles
+                    .map(function (r) { return { value: String(r.max), count: Number(r.count || 0) }; })
+                    .filter(function (i) { return (i.count || 0) >= 1; });
                 rebuildLists(form, { facetKey: 'miles', buttonId: 'maxmilesDropdown', inputId: 'maxmilesInput', modalKey: null, clearText: 'Any' }, milesItems, function (v) {
                     const num = Number(v);
                     return Number.isFinite(num) ? ('Up to ' + num.toLocaleString('en-GB')) : String(v);
         		});
         	}
+        }
+
+        function enforceMakeModelVariantCascade(form) {
+            if (!form) return;
+            const makeVal = String(form.querySelector('#makeInput')?.value || '').trim();
+            const modelVal = String(form.querySelector('#modelInput')?.value || '').trim();
+
+            const modelBtn = form.querySelector('#modelDropdown');
+            const variantBtn = form.querySelector('#variantDropdown');
+
+            // Model enabled only after make is selected
+            if (modelBtn) modelBtn.disabled = !makeVal;
+
+            // Variant enabled only after model is selected (even if facets.variant has values)
+            if (variantBtn) variantBtn.disabled = !modelVal;
         }
 
         function setSearchButtonLoading(form, isLoading) {
@@ -1002,6 +1075,7 @@ Less Filters
                     if (payload && payload.facets) {
                         applyFacetsToForm(form, payload.facets);
                     }
+                    enforceMakeModelVariantCascade(form);
                     if (payload) {
                         updateForsaleResults(payload);
                         if (typeof payload.total !== 'undefined') {
@@ -1096,16 +1170,54 @@ Less Filters
                 });
                 if (moreFiltersBtn) moreFiltersBtn.style.display = show ? 'none' : 'inline-flex';
                 if (lessFiltersBtn) lessFiltersBtn.style.display = show ? 'inline-flex' : 'none';
+
+                // Persist state in a hidden field so landing -> /searchcar keeps expanded state
+                const adv = form.querySelector('input[name="advanced"]');
+                if (adv) adv.value = show ? '1' : '';
             }
 
             if (moreFiltersBtn) moreFiltersBtn.addEventListener('click', function () { toggleAdvancedFilters(true); });
             if (lessFiltersBtn) lessFiltersBtn.addEventListener('click', function () { toggleAdvancedFilters(false); });
 
-            // If this form is used as the on-page search, prevent full page reload and use AJAX
+            // Initial: expand if URL indicates advanced=1 (used by landing redirect)
+            (function () {
+                const qs = window.location && window.location.search ? window.location.search : '';
+                const params = new URLSearchParams(qs);
+                const adv = (params.get('advanced') || '').toLowerCase();
+                if (adv === '1' || adv === 'true' || adv === 'yes') {
+                    toggleAdvancedFilters(true);
+                }
+            })();
+
+            // Apply cascade rules on init (URL hydrate may have make/model/variant)
+            enforceMakeModelVariantCascade(form);
+
+            // Submit behavior:
+            // - On for-sale page (has #mobilelayout): prevent reload and use AJAX
+            // - On landing/other pages: redirect to /searchcar with selected filters as query params
             form.addEventListener('submit', function (e) {
-                if (!document.getElementById('mobilelayout')) return;
+                const hasForsaleGrid = !!document.getElementById('mobilelayout');
+                if (hasForsaleGrid) {
+                    e.preventDefault();
+                    postFilterForm(form);
+                    return;
+                }
+
+                // Redirect to the results page
                 e.preventDefault();
-                postFilterForm(form);
+                const base = form.getAttribute('data-search-url') || '/searchcar';
+                const qs = new URLSearchParams();
+
+                form.querySelectorAll('input[type="hidden"][name]').forEach(function (inp) {
+                    if (!inp || inp.name === '_token') return;
+                    const v = String(inp.value || '').trim();
+                    if (!v) return;
+                    if (inp.name === 'advanced' && v !== '1') return;
+                    qs.append(inp.name, v);
+                });
+
+                const nextUrl = base + (qs.toString() ? ('?' + qs.toString()) : '');
+                window.location.href = nextUrl;
             });
 
             // AJAX Clear All (button/link)
