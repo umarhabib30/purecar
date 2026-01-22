@@ -5,14 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Car;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Builder;
 
 class FilterSearchPageController extends Controller
 {
     public function filter(Request $request)
     {
-        // 1) Build base query with AND filters
-        $baseQuery = Car::query();
-        $baseQuery->whereHas('advert', function ($q) {
+        // 1) Base query (active adverts only)
+        $statusQuery = Car::query();
+        $statusQuery->whereHas('advert', function ($q) {
             $q->where('status', 'active');
         });
 
@@ -38,32 +39,9 @@ class FilterSearchPageController extends Controller
             'year_to',
         ];
     
-        // Apply filters dynamically (only if filled)
-        foreach ($request->except(['_token']) as $key => $val) {
-            if (!in_array($key, $allowedFilters, true)) {
-                continue;
-            }
-            if (!$request->filled($key)) continue;
-    
-            // Range filters
-            if ($key === 'price_from') { $baseQuery->where('price', '>=', (float)$val); continue; }
-            if ($key === 'price_to')   { $baseQuery->where('price', '<=', (float)$val); continue; }
-            if ($key === 'year_from')  { $baseQuery->where('year', '>=', (int)$val); continue; }
-            if ($key === 'year_to')    { $baseQuery->where('year', '<=', (int)$val); continue; }
-            if ($key === 'miles')      { $baseQuery->where('miles', '<=', (int)$val); continue; }
-    
-            // Colors can be array or scalar (string column version)
-            if ($key === 'colors') {
-                $colors = is_array($val) ? $val : [$val];
-                $colors = array_map(fn($c) => $this->normalizeIfNeeded('colors', $c), $colors);
-                $baseQuery->whereIn('colors', $colors);
-                continue;
-            }
-    
-            // Default exact-match filters (normalized)
-            $value = $this->normalizeIfNeeded($key, $val);
-            $baseQuery->where($key, $value);
-        }
+        // Build fully-filtered query (used for results list)
+        $baseQuery = (clone $statusQuery);
+        $this->applyRequestFilters($baseQuery, $request, $allowedFilters, []);
 
         // 2) Build facets off the filtered result set (ALWAYS return all facets)
         $facets = [];
@@ -82,11 +60,17 @@ class FilterSearchPageController extends Controller
         ];
 
         foreach ($facetEqualsFields as $field) {
-            $q = (clone $baseQuery);
+            // Faceted search behavior: for each facet, calculate counts with
+            // all current filters EXCEPT the facet itself, so it doesn't collapse
+            // to only the currently selected value.
+            $q = (clone $statusQuery);
+            $this->applyRequestFilters($q, $request, $allowedFilters, [$field]);
 
             $rows = $q->whereNotNull($field)
                 ->where($field, '!=', '')
-                ->where($field, '!=', 'N/A')
+                // Exclude placeholder values like "N/A", "N/A L", etc (case-insensitive)
+                ->whereRaw("LOWER($field) NOT LIKE ?", ['n/a%'])
+                ->whereRaw("LOWER($field) NOT LIKE ?", ['na%'])
                 ->selectRaw("$field as k, COUNT(*) as c")
                 ->groupBy($field)
                 ->orderByDesc('c')
@@ -96,8 +80,14 @@ class FilterSearchPageController extends Controller
         }
 
         // Year counts (covers year_from/year_to facets)
-        $yearRanges = range(2000, 2024);
-        $yearRows = (clone $baseQuery)
+        // Keep this dynamic so the UI automatically includes new model years (e.g. 2026).
+        $currentYear = (int) date('Y');
+        $maxYear = max($currentYear, 2026);
+        $yearRanges = range(2000, $maxYear);
+        $yearQuery = (clone $statusQuery);
+        $this->applyRequestFilters($yearQuery, $request, $allowedFilters, ['year_from', 'year_to']);
+
+        $yearRows = $yearQuery
             ->select('year', DB::raw('COUNT(*) as c'))
             ->whereNotNull('year')
             ->groupBy('year')
@@ -150,8 +140,11 @@ class FilterSearchPageController extends Controller
             ['min' => 100000, 'max' => 200000],
         ];
 
-        $facets['price'] = collect($priceRanges)->map(function ($range) use ($baseQuery) {
-            $count = (clone $baseQuery)
+        $priceQuery = (clone $statusQuery);
+        $this->applyRequestFilters($priceQuery, $request, $allowedFilters, ['price_from', 'price_to']);
+
+        $facets['price'] = collect($priceRanges)->map(function ($range) use ($priceQuery) {
+            $count = (clone $priceQuery)
                 ->whereBetween('price', [$range['min'], $range['max']])
                 ->count();
 
@@ -176,8 +169,11 @@ class FilterSearchPageController extends Controller
             ['min' => 90000, 'max' => 100000],
         ];
 
-        $facets['miles'] = collect($milesRanges)->map(function ($range) use ($baseQuery) {
-            $count = (clone $baseQuery)
+        $milesQuery = (clone $statusQuery);
+        $this->applyRequestFilters($milesQuery, $request, $allowedFilters, ['miles']);
+
+        $facets['miles'] = collect($milesRanges)->map(function ($range) use ($milesQuery) {
+            $count = (clone $milesQuery)
                 ->whereBetween('miles', [$range['min'], $range['max']])
                 ->count();
 
@@ -217,6 +213,51 @@ class FilterSearchPageController extends Controller
         }
 
         return $value;
+    }
+
+    /**
+     * Apply request filters to a query, optionally excluding specific keys.
+     *
+     * @param Builder $query
+     * @param Request $request
+     * @param array $allowedFilters
+     * @param array $excludeKeys
+     * @return void
+     */
+    private function applyRequestFilters(Builder $query, Request $request, array $allowedFilters, array $excludeKeys): void
+    {
+        $exclude = array_flip($excludeKeys);
+
+        foreach ($request->except(['_token']) as $key => $val) {
+            if (!in_array($key, $allowedFilters, true)) {
+                continue;
+            }
+            if (isset($exclude[$key])) {
+                continue;
+            }
+            if (!$request->filled($key)) {
+                continue;
+            }
+
+            // Range filters
+            if ($key === 'price_from') { $query->where('price', '>=', (float)$val); continue; }
+            if ($key === 'price_to')   { $query->where('price', '<=', (float)$val); continue; }
+            if ($key === 'year_from')  { $query->where('year', '>=', (int)$val); continue; }
+            if ($key === 'year_to')    { $query->where('year', '<=', (int)$val); continue; }
+            if ($key === 'miles')      { $query->where('miles', '<=', (int)$val); continue; }
+
+            // Colors can be array or scalar (string column version)
+            if ($key === 'colors') {
+                $colors = is_array($val) ? $val : [$val];
+                $colors = array_map(fn($c) => $this->normalizeIfNeeded('colors', $c), $colors);
+                $query->whereIn('colors', $colors);
+                continue;
+            }
+
+            // Default exact-match filters (normalized)
+            $value = $this->normalizeIfNeeded($key, $val);
+            $query->where($key, $value);
+        }
     }
     
 }

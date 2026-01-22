@@ -62,6 +62,26 @@
 			padding-left: 40px !important;
 			border-bottom: unset !important;
 		}
+
+		/* Show the same "selected circle" on desktop dropdown menus */
+		.filter-box .dropdown-menu .dropdown-item::before {
+			border: 3px solid #fff;
+			border-radius: 16px;
+			content: '';
+			position: absolute;
+			left: 16px;
+			top: 50%;
+			transform: translateY(-50%);
+			width: 14px;
+			height: 14px;
+			outline: 1px solid #BFBFBF;
+			background: #fff;
+		}
+
+		.filter-box .dropdown-menu .dropdown-item.selected-option::before {
+			outline: 1px solid #388BF7;
+			background-color: #388BF7;
+		}
 	}
 
 	@media (max-width: 768px) {
@@ -754,20 +774,61 @@ Less Filters
             });
         }
 
-        function sortByCountDesc(items) {
-            return items
+        function toSortableString(v) {
+            return String(v ?? '').trim();
+        }
+
+        function toSortableNumber(v) {
+            const s = toSortableString(v)
+                .replace(/,/g, '')            // "10,000" -> "10000"
+                .replace(/[^\d.\-]/g, '');    // "2.0L" -> "2.0"
+            const n = Number(s);
+            return Number.isFinite(n) ? n : NaN;
+        }
+
+        function normalizeFacetItems(items) {
+            return (items || [])
                 .filter(function (i) {
                     const v = (i && (i.value ?? i.k)) ?? '';
-                    return v !== '' && v !== null && v !== undefined && String(v) !== 'N/A';
+                    if (v === '' || v === null || v === undefined) return false;
+                    const s = String(v).trim();
+                    if (!s) return false;
+                    // Hide invalid placeholder values like "N/A", "N/A L", etc.
+                    if (/^n\/a\b/i.test(s)) return false;
+                    if (/^na\b/i.test(s)) return false;
+                    return true;
                 })
                 .map(function (i) {
                     if (i && typeof i === 'object' && 'value' in i) return i;
                     return { value: String(i), count: 0 };
-                })
-                .sort(function (a, b) {
-                    if ((b.count || 0) !== (a.count || 0)) return (b.count || 0) - (a.count || 0);
-                    return String(a.value).localeCompare(String(b.value));
                 });
+        }
+
+        // Sorting rules requested:
+        // - Text facets: A → Z (ignore counts)
+        // - Numeric facets: smallest → largest (ignore counts)
+        function sortFacetItems(items, mode) {
+            const normalized = normalizeFacetItems(items);
+
+            if (mode === 'numeric') {
+                return normalized.sort(function (a, b) {
+                    const an = toSortableNumber(a.value);
+                    const bn = toSortableNumber(b.value);
+
+                    const aOk = Number.isFinite(an);
+                    const bOk = Number.isFinite(bn);
+
+                    if (aOk && bOk && an !== bn) return an - bn;
+                    if (aOk && !bOk) return -1;
+                    if (!aOk && bOk) return 1;
+                    return toSortableString(a.value).localeCompare(toSortableString(b.value), undefined, { sensitivity: 'base' });
+                });
+            }
+
+            // default: text
+            return normalized.sort(function (a, b) {
+                return toSortableString(a.value).localeCompare(toSortableString(b.value), undefined, { sensitivity: 'base' });
+            });
         }
 
         function applyDropdownItemSelection(item) {
@@ -844,24 +905,34 @@ Less Filters
                 }
             }
 
-            // visual selection state
-            const parentList = item.closest('.dropdown-menu') || item.closest('.custom-select-list');
-            if (parentList) {
-                parentList.querySelectorAll('.dropdown-item').forEach(function (i) {
-                    i.classList.remove('selected-option');
+            // visual selection state (keep in sync across desktop + mobile lists)
+            if (form) {
+                // clear selection for this specific input across the whole form
+                form.querySelectorAll('.dropdown-item.selected-option[data-dd-input="' + inputId + '"]').forEach(function (el) {
+                    el.classList.remove('selected-option');
                 });
+
+                // apply selection to all matching options (desktop menu + mobile modal list)
+                if (!shouldClear) {
+                    form.querySelectorAll('.dropdown-item[data-dd-input="' + inputId + '"]').forEach(function (el) {
+                        const v = String(el.getAttribute('data-dd-value') ?? '');
+                        if (v === value) el.classList.add('selected-option');
+                    });
+                }
+            } else {
+                // fallback: just mark the clicked item
+                item.classList.add('selected-option');
             }
-            item.classList.add('selected-option');
 
             // close modal if clicked inside a custom modal list
             const modal = item.closest('.custom-select-modal');
             if (modal) modal.style.display = 'none';
         }
 
-        function buildDropdownItem(cfg, value, text, count, isClear) {
+        function buildDropdownItem(cfg, value, text, count, isClear, isSelected) {
             const li = document.createElement('li');
             const a = document.createElement('a');
-            a.className = 'dropdown-item';
+            a.className = 'dropdown-item' + (isSelected ? ' selected-option' : '');
             a.href = 'javascript:void(0)';
             a.setAttribute('data-dd-target', cfg.buttonId);
             a.setAttribute('data-dd-input', cfg.inputId);
@@ -896,7 +967,8 @@ Less Filters
                 listEl.innerHTML = '';
 
                 if (cfg.clearText) {
-                    listEl.appendChild(buildDropdownItem(cfg, '', cfg.clearText, null, true));
+                    // We do not mark "Any" as selected; only real selections get the circle.
+                    listEl.appendChild(buildDropdownItem(cfg, '', cfg.clearText, null, true, false));
                 }
 
                 const seen = new Set();
@@ -916,9 +988,12 @@ Less Filters
 
                 items.forEach(function (i) {
                     const v = String(i.value);
-                    if (!v || v === 'N/A') return;
+                    if (!v) return;
+                    if (/^n\/a\b/i.test(v)) return;
+                    if (/^na\b/i.test(v)) return;
                     if (seen.has(v)) return;
-                    listEl.appendChild(buildDropdownItem(cfg, v, labelFn(v), i.count, false));
+                    const isSelected = !!selectedValue && v === selectedValue;
+                    listEl.appendChild(buildDropdownItem(cfg, v, labelFn(v), i.count, false, isSelected));
                     seen.add(v);
                 });
             }
@@ -935,21 +1010,22 @@ Less Filters
                 model: { facetKey: 'model', buttonId: 'modelDropdown', inputId: 'modelInput', modalKey: 'model', clearText: 'Any', disableWhenEmpty: true },
                 variant: { facetKey: 'variant', buttonId: 'variantDropdown', inputId: 'variantInput', modalKey: null, clearText: 'Any', disableWhenEmpty: true },
                 body_type: { facetKey: 'body_type', buttonId: 'bodytypeDropdown', inputId: 'bodytypeInput', modalKey: null, clearText: 'Any' },
-                engine_size: { facetKey: 'engine_size', buttonId: 'enginesizeDropdown', inputId: 'enginesizeInput', modalKey: null, clearText: 'Any' },
+                engine_size: { facetKey: 'engine_size', buttonId: 'enginesizeDropdown', inputId: 'enginesizeInput', modalKey: null, clearText: 'Any', sortMode: 'numeric' },
                 fuel_type: { facetKey: 'fuel_type', buttonId: 'fueltypeDropdown', inputId: 'fueltypeInput', modalKey: null, clearText: 'Any' },
                 gear_box: { facetKey: 'gear_box', buttonId: 'gearboxDropdown', inputId: 'gearboxInput', modalKey: null, clearText: 'Any' },
-                doors: { facetKey: 'doors', buttonId: 'doorsDropdown', inputId: 'doorsInput', modalKey: null, clearText: 'Any' },
+                doors: { facetKey: 'doors', buttonId: 'doorsDropdown', inputId: 'doorsInput', modalKey: null, clearText: 'Any', sortMode: 'numeric' },
                 colors: { facetKey: 'colors', buttonId: 'colorsDropdown', inputId: 'colorsInput', modalKey: null, clearText: 'Any' },
                 seller_type: { facetKey: 'seller_type', buttonId: 'sellertypeDropdown', inputId: 'sellertypeInput', modalKey: null, clearText: 'Any' },
             };
 
             Object.keys(configs).forEach(function (k) {
                 const cfg = configs[k];
-                const items = sortByCountDesc(normalizeFacetMap(facets[cfg.facetKey]));
+                const mode = cfg.sortMode || 'text';
+                const items = sortFacetItems(normalizeFacetMap(facets[cfg.facetKey]), mode);
                 rebuildLists(form, cfg, items, function (value) {
                     if (cfg.facetKey === 'seller_type') {
-                        if (value === 'private_seller') return 'Private';
-                        if (value === 'car_dealer') return 'Dealer';
+                        if (value === 'private_seller') return 'PRIVATE';
+                        if (value === 'car_dealer') return 'DEALER';
                     }
                     return String(value);
                 });
@@ -970,10 +1046,12 @@ Less Filters
             if (Array.isArray(facets.price)) {
                 const fromItems = facets.price
                     .map(function (r) { return { value: String(r.min), count: Number(r.count || 0) }; })
-                    .filter(function (i) { return (i.count || 0) >= 1; });
+                    .filter(function (i) { return (i.count || 0) >= 1; })
+                    .sort(function (a, b) { return toSortableNumber(a.value) - toSortableNumber(b.value); });
                 const toItems = facets.price
                     .map(function (r) { return { value: String(r.max), count: Number(r.count || 0) }; })
-                    .filter(function (i) { return (i.count || 0) >= 1; });
+                    .filter(function (i) { return (i.count || 0) >= 1; })
+                    .sort(function (a, b) { return toSortableNumber(a.value) - toSortableNumber(b.value); });
 
                 rebuildLists(form, { facetKey: 'price', buttonId: 'pricefromDropdown', inputId: 'pricefromInput', modalKey: 'price-from', clearText: 'Any' }, fromItems, function (v) { return formatGBP(v); });
                 rebuildLists(form, { facetKey: 'price', buttonId: 'pricetoDropdown', inputId: 'pricetoInput', modalKey: 'price-to', clearText: 'Any' }, toItems, function (v) { return formatGBP(v); });
@@ -983,7 +1061,8 @@ Less Filters
             if (Array.isArray(facets.miles)) {
                 const milesItems = facets.miles
                     .map(function (r) { return { value: String(r.max), count: Number(r.count || 0) }; })
-                    .filter(function (i) { return (i.count || 0) >= 1; });
+                    .filter(function (i) { return (i.count || 0) >= 1; })
+                    .sort(function (a, b) { return toSortableNumber(a.value) - toSortableNumber(b.value); });
                 rebuildLists(form, { facetKey: 'miles', buttonId: 'maxmilesDropdown', inputId: 'maxmilesInput', modalKey: null, clearText: 'Any' }, milesItems, function (v) {
                     const num = Number(v);
                     return Number.isFinite(num) ? ('Up to ' + num.toLocaleString('en-GB')) : String(v);
