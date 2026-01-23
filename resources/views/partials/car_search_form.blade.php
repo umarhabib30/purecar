@@ -271,7 +271,7 @@
 		}
 	}
 </style>
-<form class="filter-box" method="POST" action="{{ route('filter') }}" data-search-url="{{ route('search_car') }}" id="{{ $formId ?? 'desktopform' }}">
+<form class="filter-box" method="POST" action="{{ route('filter') }}" data-search-url="{{ route('search_car') }}" data-initial-facets='@json($initialFacets ?? null)' id="{{ $formId ?? 'desktopform' }}">
 	@csrf
 	<div class="filter-inner">
 		<!-- Row 1: Make, Model, Variant, Body Type, Fuel Type -->
@@ -1308,9 +1308,26 @@ Less Filters
                 });
             });
 
-            // Initial load: if URL has filters, apply them + refresh counts/options from /filter
-            // Always fetch facets/options from /filter so dropdowns are not hard-coded in Blade.
-            postFilterForm(form);
+            // Initial load:
+            // - If server provided initial facets, render dropdowns immediately (no initial /filter call).
+            // - If URL has filters, or no initial facets were provided, fetch facets/options from /filter.
+            let hasInitialFacets = false;
+            try {
+                const raw = form.getAttribute('data-initial-facets');
+                if (raw) {
+                    const initial = JSON.parse(raw);
+                    if (initial && typeof initial === 'object') {
+                        applyFacetsToForm(form, initial);
+                        hasInitialFacets = true;
+                    }
+                }
+            } catch (e) {
+                // ignore JSON parse errors
+            }
+
+            if (didHydrate || !hasInitialFacets) {
+                postFilterForm(form);
+            }
         });
     });
 </script>

@@ -19,11 +19,13 @@ use App\Models\PriceSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
+use App\Services\CarFacetService;
 
 class landingPageController extends Controller
 {
     
- public function landing_page(){
+ public function landing_page(Request $request, CarFacetService $facetService){
     $data = Car::whereHas('advert', function ($query) {
     $query->where('status', 'active');
         })
@@ -151,6 +153,12 @@ class landingPageController extends Controller
     // take 5 random dealers
     $dealers = User::where('role', 'car_dealer')->take(5)->inRandomOrder()->get();
     
+    // Initial facets for the hero search form (server-rendered to avoid initial /filter AJAX call).
+    $initialFacets = Cache::remember('facets.initial.v1', 600, function () use ($facetService) {
+        $statusQuery = $facetService->buildStatusQuery();
+        return $facetService->buildFacets($statusQuery, new Request([]), $facetService->allowedFilters());
+    });
+
     return view('landing_page', compact(
         'data',
         'events',
@@ -163,7 +171,8 @@ class landingPageController extends Controller
         'price_counts',
         'year_counts',
         'counters',
-        'dealers'
+        'dealers',
+        'initialFacets'
     ));
 }
 

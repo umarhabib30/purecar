@@ -4,20 +4,22 @@ use App\Models\Car;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use App\Services\CarFacetService;
 class CarController extends Controller
 {
-    public function search_car(Request $request)
+    public function search_car(Request $request, CarFacetService $facetService)
     {
         $validated = $request->validate([
             'make' => 'nullable|string|max:255',
             'fuel_type' => 'nullable|string|max:255',
             'model' => 'nullable|string|max:255',
             'variant' => 'nullable|string|max:255',
-            'year_from' => 'nullable|integer|min:1900|max:2024',
+            'year_from' => 'nullable|integer|min:1900|max:2026',
             'price_from' => 'nullable|numeric|min:0',
             'seller_type' => 'nullable|string|max:255',
             'transmission_type' => 'nullable|string|max:255',
-            'year_to' => 'nullable|integer|min:1900|max:2024',
+            'year_to' => 'nullable|integer|min:1900|max:2026',
             'price_to' => 'nullable|numeric|min:0',
             'miles' => 'nullable|numeric|min:0',
             'body_type' => 'nullable|string|max:255',
@@ -378,12 +380,19 @@ class CarController extends Controller
             // ->orderBy('colors')
             // ->get();
             // dd($count);
+        // Initial facets for the shared search form partial (cached).
+        $initialFacets = Cache::remember('facets.initial.v1', 600, function () use ($facetService) {
+            $statusQuery = $facetService->buildStatusQuery();
+            return $facetService->buildFacets($statusQuery, new Request([]), $facetService->allowedFilters());
+        });
+
         return view('forsale_page', compact(
             'cars', 'count', 'search_field', 'makeselected', 'fuel_typeselected',
             'colorsselected', 'engine_sizeselected', 'doorsselected', 'body_typeselected',
             'gear_boxselected', 'seller_typeselected', 'milesselected', 'modelselected',
             'variantselected', 'year_ranges', 'year_counts', 'price_ranges', 'price_counts',
-            'pricefromselected', 'pricetoselected', 'yeartoselected', 'yearfromselected','totalCount'
+            'pricefromselected', 'pricetoselected', 'yeartoselected', 'yearfromselected','totalCount',
+            'initialFacets'
         ));
     }
  
@@ -733,11 +742,11 @@ public function countCars(Request $request)
         'fuel_type' => 'nullable|string|max:255',
         'model' => 'nullable|string|max:255',
         'variant' => 'nullable|string|max:255',
-        'year_from' => 'nullable|integer|min:1900|max:2024',
+        'year_from' => 'nullable|integer|min:1900|max:2026',
         'price_from' => 'nullable|numeric|min:0',
         'seller_type' => 'nullable|string|max:255',
         'transmission_type' => 'nullable|string|max:255',
-        'year_to' => 'nullable|integer|min:1900|max:2024',
+        'year_to' => 'nullable|integer|min:1900|max:2026',
         'price_to' => 'nullable|numeric|min:0',
         'miles' => 'nullable|numeric|min:0',
         'body_type' => 'nullable|string|max:255',
@@ -822,11 +831,11 @@ public function sortCars(Request $request)
             'fuel_type' => 'nullable|string|max:255',
             'model' => 'nullable|string|max:255',
             'variant' => 'nullable|string|max:255',
-            'year_from' => 'nullable|integer|min:1900|max:2024',
+            'year_from' => 'nullable|integer|min:1900|max:2026',
             'price_from' => 'nullable|numeric|min:0',
             'seller_type' => 'nullable|string|max:255',
             'transmission_type' => 'nullable|string|max:255',
-            'year_to' => 'nullable|integer|min:1900|max:2024',
+            'year_to' => 'nullable|integer|min:1900|max:2026',
             'price_to' => 'nullable|numeric|min:0',
             'miles' => 'nullable|numeric|min:0',
             'body_type' => 'nullable|string|max:255',
