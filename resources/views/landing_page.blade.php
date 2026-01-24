@@ -99,17 +99,37 @@ button[disabled] {
     .hero-section-desktop{
         display: none !important;
     }
-    .display-desktop-none {
-            display: none !important;
-        }
-        .dropdown-menu.mobile-menu .dropdown-item, .custom-select-list .dropdown-item{
-            padding: 18px 16px;
-            color: #0E121B !important;
-            white-space: normal !important;
-            position: relative !important;
-            padding-left: 40px !important;
-            border-bottom: unset !important;
-        }
+    /* Keep previous intent, but DON'T hide the mobile full-screen select modals. */
+    .display-desktop-none:not(.custom-select-modal) {
+        display: none !important;
+    }
+
+    .custom-select-header{
+        display: none !important;
+    }
+
+    /* Mobile only: hide the small "selected circles" indicators */
+    /*.custom-select-list .dropdown-item::before,
+    .custom-select-list .dropdown-item::after,
+    .dropdown-menu.mobile-menu .dropdown-item::before,
+    .dropdown-menu.mobile-menu .dropdown-item::after {
+        display: none !important;
+        content: none !important;
+    }*/
+
+    /* Landing page: mobile-only option design (for the full-screen selector lists) */
+    .dropdown-menu.mobile-menu .dropdown-item,
+    .custom-select-list .dropdown-item{
+        padding: 18px 16px;
+        color: #0E121B !important;
+        white-space: normal !important;
+        position: relative !important;
+        padding-left: 16px !important; /* since circles are hidden */
+        border-bottom: 1px solid #dddddd !important;
+        font-size: 16px !important;
+        font-weight: 500 !important;
+        background: #fff !important;
+    }
     
 }
 

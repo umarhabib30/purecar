@@ -374,22 +374,22 @@
             }
 
             /* Hide any circular indicators that might look like radio buttons */
-            #filterModal .dropdown-item::before,
+            /*#filterModal .dropdown-item::before,
             #filterModal .dropdown-item::after,
             .dropdown-item::before,
             .dropdown-item::after {
                 display: none !important;
                 content: none !important;
-            }
+            }*/
 
             /* Specifically hide circles in dropdown menu items */
-            #filterModal .dropdown-menu li::before,
+            /*#filterModal .dropdown-menu li::before,
             #filterModal .dropdown-menu li::after,
             .dropdown-menu li::before,
             .dropdown-menu li::after {
                 display: none !important;
                 content: none !important;
-            }
+            }*/
 
             #externalDropdownList {
                 list-style: none;
@@ -554,22 +554,22 @@
             }
 
             /* Hide any circular indicators that might look like radio buttons */
-            #filterModal .dropdown-item::before,
+            /*#filterModal .dropdown-item::before,
             #filterModal .dropdown-item::after,
             .dropdown-item::before,
             .dropdown-item::after {
                 display: none !important;
                 content: none !important;
-            }
+            }*/
 
             /* Specifically hide circles in dropdown menu items */
-            #filterModal .dropdown-menu li::before,
+            /*#filterModal .dropdown-menu li::before,
             #filterModal .dropdown-menu li::after,
             .dropdown-menu li::before,
             .dropdown-menu li::after {
                 display: none !important;
                 content: none !important;
-            }
+            }*/
 
             .navbar.navbar-expand-lg {
                 z-index: 80 !important;
@@ -629,6 +629,12 @@
         </div>
         <div class="desktop-hero-section-text" id="mobileSearchForm">
             <div class="desktop-hero-section-innerbox">
+                <!-- <div class="display-desktop-none d-flex justify-content-between align-items-center"
+                    style="position: sticky; top: 0; background: #fff; z-index: 1000; padding: 10px 0;">
+                    <span style="font-size: 18px; font-weight: 600;">Search</span>
+                    <button type="button" id="mobileSearchClose"
+                        style="border: 0; background: transparent; font-size: 32px; line-height: 1; padding: 0;">&times;</button>
+                </div> -->
                 @include('partials.car_search_form', ['formId' => 'heroSearchForm'])
             </div>
         </div>
@@ -1147,5 +1153,47 @@
    
 
     
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const openBtn = document.getElementById('mobile-search-button');
+            const panel = document.getElementById('mobileSearchForm');
+            const closeBtn = document.getElementById('mobileSearchClose');
 
+            function isMobile() {
+                return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+            }
+
+            function openPanel() {
+                if (!panel) return;
+                panel.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closePanel() {
+                if (!panel) return;
+                panel.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+
+            if (openBtn) {
+                openBtn.addEventListener('click', function (e) {
+                    if (!isMobile()) return;
+                    e.preventDefault();
+                    openPanel();
+                });
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    closePanel();
+                });
+            }
+
+            document.addEventListener('keydown', function (e) {
+                if (!isMobile()) return;
+                if (e.key === 'Escape') closePanel();
+            });
+        });
+    </script>
 @endsection
