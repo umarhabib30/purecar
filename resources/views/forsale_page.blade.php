@@ -613,6 +613,14 @@
             .search-filter-bar {
                 z-index: 10 !important;
             }
+
+            /* For-sale page only: show the "Close" button inside the search form (mobile only) */
+            #mobileSearchForm .pc-mobile-search-close {
+                display: inline-flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                text-align: center !important;
+            }
         }
 
         #sortList .dropdown-item {
@@ -635,7 +643,7 @@
                     <button type="button" id="mobileSearchClose"
                         style="border: 0; background: transparent; font-size: 32px; line-height: 1; padding: 0;">&times;</button>
                 </div> -->
-                @include('partials.car_search_form', ['formId' => 'heroSearchForm'])
+                @include('partials.car_search_form', ['formId' => 'heroSearchForm', 'showCloseButton' => true])
             </div>
         </div>
     </div>
@@ -1157,7 +1165,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             const openBtn = document.getElementById('mobile-search-button');
             const panel = document.getElementById('mobileSearchForm');
-            const closeBtn = document.getElementById('mobileSearchClose');
+            const closeBtn = document.querySelector('#mobileSearchForm .pc-mobile-search-close');
 
             function isMobile() {
                 return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;

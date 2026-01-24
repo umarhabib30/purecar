@@ -261,6 +261,11 @@
                 white-space: nowrap !important;
             }
         }
+
+    /* Hide the "Close" button everywhere by default (we enable it only on for-sale page mobile). */
+    .pc-mobile-search-close {
+        display: none !important;
+    }
     </style>
     <form class="filter-box" method="POST" action="{{ route('filter') }}" data-search-url="{{ route('search_car') }}" data-initial-facets='@json($initialFacets ?? null)' id="{{ $formId ?? 'desktopform' }}">
         @csrf
@@ -774,7 +779,9 @@
     <div class="d-flex align-items-center gap-2 search-btn-container">
         <div class="d-flex align-items-center gap-2 mobile-buttons-container">
             <button type="reset" class="btn btn-link clear-all-link p-0" style="text-decoration: none !important;">Clear all</button>
-            <button type="button" class="btn btn-link clear-all-link p-0" style="text-decoration: none !important;" id="mobileSearchClose" >Close</button>
+            @if(!empty($showCloseButton))
+                <button type="button" class="btn btn-link clear-all-link p-0 pc-mobile-search-close" style="text-decoration: none !important;">Close</button>
+            @endif
             <!-- <button type="button" id="mobileSearchClose" style="border: 0; background: transparent; font-size: 32px; line-height: 1; padding: 0;">&times;</button> -->
         </div>
         <button type="submit" id="searchButton" class="btn btn-dark search-btn">Search</button>
@@ -788,6 +795,11 @@
         // - More/Less filters toggle
         // - AJAX: after any filter selection, POST to /filter and rebuild ALL dropdown option lists with counts
         document.addEventListener('DOMContentLoaded', function () {
+            // This partial is included multiple times on some pages (e.g. landing has desktop + mobile forms).
+            // Prevent double-binding global event listeners / duplicate AJAX calls.
+            if (window.__pcCarSearchFormBootstrapped) return;
+            window.__pcCarSearchFormBootstrapped = true;
+
             // Landing page mobile fix:
             // If the search form is inside a clipped/overflow container, the "fixed" modal can appear constrained.
             // For landing page only, we temporarily move the active modal to <body> so it can truly be full-screen.
@@ -831,6 +843,16 @@
                     delete modal.dataset.movedToBody;
                     delete modal.dataset.ownerFormId;
                 }
+            }
+
+            function resolveFormForElement(el) {
+                if (!el) return null;
+                const direct = el.closest && el.closest('form.filter-box');
+                if (direct) return direct;
+                const modal = el.closest && el.closest('.custom-select-modal');
+                const ownerId = modal && modal.dataset ? String(modal.dataset.ownerFormId || '') : '';
+                if (ownerId) return document.getElementById(ownerId);
+                return null;
             }
     
             function initDefaultDropdownText(form) {
@@ -982,7 +1004,7 @@
                 });
             }
     
-            function applyDropdownItemSelection(item) {
+            function applyDropdownItemSelection(item, forceForm) {
                 const targetId = item.getAttribute('data-dd-target');
                 const inputId = item.getAttribute('data-dd-input');
                 if (!targetId || !inputId) return;
@@ -992,10 +1014,12 @@
                 const text = String(item.getAttribute('data-dd-text') || value);
                 const shouldClear = item.hasAttribute('data-dd-clear') || value === '' || value === 'Any';
     
-                const form = item.closest('form.filter-box');
-                const btn = form ? form.querySelector('#' + targetId) : document.getElementById(targetId);
+                const form = forceForm || resolveFormForElement(item);
+                if (!form) return; // avoid updating the wrong form (duplicate IDs across forms)
+
+                const btn = form.querySelector('#' + targetId);
                 const span = btn ? (btn.querySelector('.dropdown-text') || btn.querySelector('span')) : null;
-                const input = form ? form.querySelector('#' + inputId) : document.getElementById(inputId);
+                const input = form.querySelector('#' + inputId);
     
                 const prevValue = input ? String(input.value || '') : '';
     
@@ -1285,6 +1309,11 @@
             function postFilterForm(form) {
                 if (!form || !form.action) return;
     
+                // Prevent out-of-order responses from older requests overwriting newer totals/options.
+                const nextSeq = (Number(form.dataset.reqSeq || '0') || 0) + 1;
+                form.dataset.reqSeq = String(nextSeq);
+                const requestSeq = nextSeq;
+
                 const token = getCsrfToken(form);
                 const params = new URLSearchParams(new FormData(form)).toString();
     
@@ -1299,6 +1328,7 @@
     
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState !== 4) return;
+                    if (String(form.dataset.reqSeq || '') !== String(requestSeq)) return;
     
                     try {
                         const contentType = xhr.getResponseHeader('content-type') || '';
@@ -1327,6 +1357,7 @@
     
                 xhr.onerror = function () {
                     console.error('Filter request failed');
+                    if (String(form.dataset.reqSeq || '') !== String(requestSeq)) return;
                     setSearchButtonLoading(form, false);
                 };
     
@@ -1363,8 +1394,8 @@
                 if (!item) return;
                 if (!item.hasAttribute('data-dd-target')) return;
     
-                applyDropdownItemSelection(item);
-                const form = item.closest('form.filter-box');
+                const form = resolveFormForElement(item);
+                applyDropdownItemSelection(item, form);
                 if (form) postFilterForm(form);
             });
     

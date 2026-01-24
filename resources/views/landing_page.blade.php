@@ -96,6 +96,10 @@ button[disabled] {
 }
 
 @media (max-width: 768px) {
+
+    #mobileSearchClose{
+        display: none !important;
+    }
     .hero-section-desktop{
         display: none !important;
     }
@@ -105,6 +109,11 @@ button[disabled] {
     }
 
     .custom-select-header{
+        display: none !important;
+    }
+
+    /* If you meant the "X" close icon inside the full-screen select modal */
+    .custom-select-close{
         display: none !important;
     }
 
@@ -129,6 +138,27 @@ button[disabled] {
         font-size: 16px !important;
         font-weight: 500 !important;
         background: #fff !important;
+    }
+
+    /* Landing page: make "Clear all" full-width on mobile */
+    #mobileHeroSearchForm .mobile-buttons-container {
+        width: 100% !important;
+    }
+    #mobileHeroSearchForm .mobile-buttons-container .clear-all-link {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        text-align: center !important;
+    }
+
+    .pc-mobile-search-close {
+        display: none !important;
+    }
+
+    /* Landing page: ensure the Close button stays hidden (mobile only) */
+    #mobileHeroSearchForm .pc-mobile-search-close {
+        display: none !important;
     }
     
 }
@@ -901,6 +931,10 @@ setInterval(updateBrands, 5000);
             .dropdown-menu{
                 display: none !important;
             }
+
+            .pc-mobile-search-close {
+                display: none !important;
+            }
         }
 
         @media (max-width: 480px) {
@@ -917,6 +951,10 @@ setInterval(updateBrands, 5000);
             .blog-content-link {
                 font-size: 16px;
             }
+
+            .pc-mobile-search-close {
+                display: none !important;
+            }
         }
     </style>
 
@@ -925,6 +963,22 @@ setInterval(updateBrands, 5000);
 <style>
     .clickable-image{
     cursor: pointer; 
+}
+</style>
+
+<!-- Landing page: last-wins mobile overrides (after partial styles) -->
+<style>
+@media (max-width: 768px) {
+    /* Hide the footer "Close" button from the search form (landing only) */
+    #mobileHeroSearchForm .pc-mobile-search-close {
+        display: none !important;
+    }
+
+    /* Hide the "X" inside the full-screen select modal (landing only) */
+    .custom-select-modal[data-owner-form-id="mobileHeroSearchForm"] .custom-select-header,
+    .custom-select-modal[data-owner-form-id="mobileHeroSearchForm"] .custom-select-close {
+        display: none !important;
+    }
 }
 </style>
 <!-- Landing page modal JS removed (handled elsewhere) -->
