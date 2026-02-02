@@ -30,9 +30,7 @@ class CarController extends Controller
             'sort' => 'nullable|string|in:most-recent,low-high,high-low,mileage,mileage-low,newest,oldest',
         ]);
         // echo $request->colors;die();
-        $query = Car::whereHas('advert', function ($query) {
-            $query->where('status', 'active');
-        });
+        $query = $facetService->buildStatusQuery();
         
         if (!empty($validated['make'])) {
             $query->where('make', 'like', '%' . $validated['make'] . '%');
@@ -154,9 +152,9 @@ class CarController extends Controller
         $pricetoselected=$request->input('price_to');
         $yeartoselected=$request->input('year');
         $yearfromselected=$request->input('year_from');
-        $year_ranges = [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 
-                    2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 
-                    2020, 2021, 2022, 2023, 2024];
+        $currentYear = (int) date('Y');
+        $maxYear = max($currentYear, 2026);
+        $year_ranges = range(2000, $maxYear);
                     
         $year_counts = [];
         foreach ($year_ranges as $year) {
@@ -166,65 +164,34 @@ class CarController extends Controller
                 })
                 ->count();
         }
-        foreach ($year_ranges as $year) {
-            $year_counts[$year] = Car::where('year', $year)->count(); // Exact match for year
-        }
-        $price_ranges = [
-            ['min' => 500, 'max' => 1000],
-            ['min' => 1000, 'max' => 1500],
-            ['min' => 1500, 'max' => 2000],
-            ['min' => 2000, 'max' => 2500],
-            ['min' => 2500, 'max' => 3000],
-            ['min' => 3000, 'max' => 3500],
-            ['min' => 3500, 'max' => 4000],
-            ['min' => 4000, 'max' => 4500],
-            ['min' => 4500, 'max' => 5000],
-            ['min' => 5000, 'max' => 5500],
-            ['min' => 5500, 'max' => 6000],
-            ['min' => 6000, 'max' => 6500],
-            ['min' => 6500, 'max' => 7000],
-            ['min' => 7000, 'max' => 7500],
-            ['min' => 7500, 'max' => 8000],
-            ['min' => 8000, 'max' => 8500],
-            ['min' => 8500, 'max' => 9000],
-            ['min' => 9000, 'max' => 9500],
-            ['min' => 10000, 'max' => 20000],
-            ['min' => 20000, 'max' => 30000],
-            ['min' => 30000, 'max' => 40000],
-            ['min' => 40000, 'max' => 50000],
-            ['min' => 50000, 'max' => 60000],
-            ['min' => 60000, 'max' => 70000],
-            ['min' => 70000, 'max' => 80000],
-            ['min' => 80000, 'max' => 90000],
-            ['min' => 90000, 'max' => 100000],
-            ['min' => 100000, 'max' => 200000],
-        ];
-        $price_counts = [];
-        $bucket_counts = [];
-        $total_price = 0;
-        foreach ($price_ranges as $range) {
-            $count = Car::whereBetween('price', [$range['min'], $range['max']])
-                ->whereHas('advert', function ($query) {
-                    $query->where('status', 'active');
-                })
-                ->count();
-            $bucket_counts[] = (int) $count;
-            $total_price += (int) $count;
-        }
-        $cumulative_to = 0;
-        foreach ($price_ranges as $idx => $range) {
-            $bucket_count = (int) ($bucket_counts[$idx] ?? 0);
-            $cumulative_before = $cumulative_to;
-            $cumulative_to += $bucket_count;
-            $count_to = $cumulative_to;
-            $count_from = max($total_price - $cumulative_before, 0);
 
+        $year_counts_to = [];
+        $running_year_total = 0;
+        foreach ($year_ranges as $year) {
+            $running_year_total += (int) ($year_counts[$year] ?? 0);
+            $year_counts_to[$year] = $running_year_total;
+        }
+
+        $year_counts_from = $year_counts_to;
+
+        // Price breakpoints: 1k-15k in 1k steps, then 20k-120k in 5k steps
+        $pricePoints = array_merge(
+            range(1000, 15000, 1000),
+            range(20000, 120000, 5000)
+        );
+
+        $basePriceQuery = (clone $facetService->buildStatusQuery())->whereNotNull('price')->where('price', '>', 0);
+
+        $price_counts = [];
+        foreach ($pricePoints as $p) {
+            $cTo = (clone $basePriceQuery)->where('price', '<=', $p)->count();
+            $cFrom = (clone $basePriceQuery)->where('price', '>=', $p)->count();
             $price_counts[] = [
-                'min' => $range['min'],
-                'max' => $range['max'],
-                'count' => $count_to,
-                'count_to' => $count_to,
-                'count_from' => $count_from,
+                'min' => $p,
+                'max' => $p,
+                'count' => $cTo,
+                'count_to' => $cTo,
+                'count_from' => $cFrom,
             ];
         }
         $miles_ranges = [
@@ -388,19 +355,18 @@ class CarController extends Controller
             // ->get();
             // dd($count);
         // Initial facets for the shared search form partial (cached).
-        $initialFacets = Cache::remember('facets.initial.v1', 600, function () use ($facetService) {
+        $initialFacets = Cache::remember('facets.initial.v3', 600, function () use ($facetService) {
             $statusQuery = $facetService->buildStatusQuery();
             return $facetService->buildFacets($statusQuery, new Request([]), $facetService->allowedFilters());
         });
-        $totalResults = Car::whereHas('advert', function ($query) {
-            $query->where('status', 'active');
-        })->count();
+        $totalResults = (clone $facetService->buildStatusQuery())->count();
         return view('forsale_page', compact(
             'cars', 'count', 'search_field', 'makeselected', 'fuel_typeselected',
             'colorsselected', 'engine_sizeselected', 'doorsselected', 'body_typeselected',
             'gear_boxselected', 'seller_typeselected', 'milesselected', 'modelselected',
-            'variantselected', 'year_ranges', 'year_counts', 'price_ranges', 'price_counts',
+            'variantselected', 'year_ranges', 'year_counts', 'price_counts',
             'pricefromselected', 'pricetoselected', 'yeartoselected', 'yearfromselected','totalCount',
+            'year_counts_to', 'year_counts_from',
             'initialFacets', 'totalResults'
         ));
     }
@@ -760,6 +726,7 @@ public function getFilteredFieldssale(Request $request)
 }
 public function countCars(Request $request)
 {
+    $facetService = app(CarFacetService::class);
     $validated = $request->validate([
         'make' => 'nullable|string|max:255',
         'fuel_type' => 'nullable|string|max:255',
@@ -779,9 +746,7 @@ public function countCars(Request $request)
         'keyword' => 'nullable|string|max:255',
     ]);
     
-    $query = Car::whereHas('advert', function ($query) {
-        $query->where('status', 'active');
-    });
+    $query = $facetService->buildStatusQuery();
     if (!empty($validated['make'])) {
         $query->where('make', 'like', '%' . $validated['make'] . '%');
     }

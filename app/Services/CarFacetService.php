@@ -124,85 +124,48 @@ class CarFacetService
             }
         }
 
-        $facets['year'] = collect($yearRanges)->mapWithKeys(function ($year) use ($yearCounts) {
+        $yearFromCounts = collect($yearRanges)->mapWithKeys(function ($year) use ($yearCounts) {
             $k = (string) $year;
             return [$k => (int) ($yearCounts[$k] ?? 0)];
         })->toArray();
 
-        // Price buckets (covers price_from/price_to)
-        $priceRanges = [
-            ['min' => 500, 'max' => 1000],
-            ['min' => 1000, 'max' => 1500],
-            ['min' => 1500, 'max' => 2000],
-            ['min' => 2000, 'max' => 2500],
-            ['min' => 2500, 'max' => 3000],
-            ['min' => 3000, 'max' => 3500],
-            ['min' => 3500, 'max' => 4000],
-            ['min' => 4000, 'max' => 4500],
-            ['min' => 4500, 'max' => 5000],
-            ['min' => 5000, 'max' => 5500],
-            ['min' => 5500, 'max' => 6000],
-            ['min' => 6000, 'max' => 6500],
-            ['min' => 6500, 'max' => 7000],
-            ['min' => 7000, 'max' => 7500],
-            ['min' => 7500, 'max' => 8000],
-            ['min' => 8000, 'max' => 8500],
-            ['min' => 8500, 'max' => 9000],
-            ['min' => 9000, 'max' => 9500],
-            ['min' => 10000, 'max' => 20000],
-            ['min' => 20000, 'max' => 30000],
-            ['min' => 30000, 'max' => 40000],
-            ['min' => 40000, 'max' => 50000],
-            ['min' => 50000, 'max' => 60000],
-            ['min' => 60000, 'max' => 70000],
-            ['min' => 70000, 'max' => 80000],
-            ['min' => 80000, 'max' => 90000],
-            ['min' => 90000, 'max' => 100000],
-            ['min' => 100000, 'max' => 200000],
-        ];
+        $cumulativeTo = [];
+        $running = 0;
+        foreach ($yearRanges as $year) {
+            $key = (string) $year;
+            $running += (int) ($yearCounts[$key] ?? 0);
+            $cumulativeTo[$key] = $running;
+        }
+
+        // Cumulative "from year" (<= year) to match Year To direction
+        $facets['year_from'] = $cumulativeTo;
+        $facets['year_to'] = $cumulativeTo;
+
+        // Price breakpoints: 1k-15k in 1k steps, then 20k-120k in 5k steps
+        $pricePoints = array_merge(
+            range(1000, 15000, 1000),
+            range(20000, 120000, 5000)
+        );
 
         $priceQuery = (clone $statusQuery);
         $this->applyRequestFilters($priceQuery, $request, $allowedFilters, ['price_from', 'price_to']);
 
-        $priceBucketCase = 'CASE ';
-        foreach ($priceRanges as $r) {
-            $min = (int) $r['min'];
-            $max = (int) $r['max'];
-            $label = $min . '-' . $max;
-            $priceBucketCase .= "WHEN price BETWEEN $min AND $max THEN '$label' ";
+        $basePriceQuery = (clone $priceQuery)->whereNotNull('price')->where('price', '>', 0);
+
+        $countTo = [];
+        $countFrom = [];
+        foreach ($pricePoints as $p) {
+            $countTo[$p] = (clone $basePriceQuery)->where('price', '<=', $p)->count();
+            $countFrom[$p] = (clone $basePriceQuery)->where('price', '>=', $p)->count();
         }
-        $priceBucketCase .= 'ELSE NULL END';
 
-        $priceBucketCounts = (clone $priceQuery)
-            ->whereNotNull('price')
-            ->where('price', '>', 0)
-            ->selectRaw("$priceBucketCase as bucket, COUNT(*) as c")
-            ->groupBy('bucket')
-            ->get()
-            ->pluck('c', 'bucket')
-            ->toArray();
-
-        $totalPriceCount = array_sum(array_map('intval', $priceBucketCounts));
-        $cumulativeTo = 0;
-
-        $facets['price'] = collect($priceRanges)->map(function ($range) use ($priceBucketCounts, $totalPriceCount, &$cumulativeTo) {
-            $min = (int) $range['min'];
-            $max = (int) $range['max'];
-            $label = $min . '-' . $max;
-            $bucketCount = (int) ($priceBucketCounts[$label] ?? 0);
-            $cumulativeBefore = $cumulativeTo;
-            $cumulativeTo += $bucketCount;
-
-            $countTo = $cumulativeTo;
-            $countFrom = max($totalPriceCount - $cumulativeBefore, 0);
-
+        $facets['price'] = collect($pricePoints)->map(function ($value) use ($countTo, $countFrom) {
             return [
-                'min' => $min,
-                'max' => $max,
-                // Keep count for backwards compatibility (use cumulative up-to)
-                'count' => $countTo,
-                'count_to' => $countTo,
-                'count_from' => $countFrom,
+                'min' => $value,
+                'max' => $value,
+                'count' => $countTo[$value],
+                'count_to' => $countTo[$value],
+                'count_from' => $countFrom[$value],
             ];
         })->values()->toArray();
 
@@ -257,6 +220,11 @@ class CarFacetService
     public function applyRequestFilters(Builder $query, Request $request, array $allowedFilters, array $excludeKeys): void
     {
         $exclude = array_flip($excludeKeys);
+
+        // If Year To is set but Year From is empty, default to 2000 (controller-side behavior)
+        if (!isset($exclude['year_from']) && $request->filled('year_to') && !$request->filled('year_from')) {
+            $query->where('year', '>=', 2000);
+        }
 
         foreach ($request->except(['_token']) as $key => $val) {
             if (!in_array($key, $allowedFilters, true)) {

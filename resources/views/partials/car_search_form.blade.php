@@ -1191,6 +1191,7 @@
                 }
             }
 
+
             // visual selection state (keep in sync across desktop + mobile lists)
             if (form) {
                 // clear selection for this specific input across the whole form
@@ -1395,12 +1396,15 @@
             });
 
             // Year (used by year-from + year-to)
-            if (facets.year && typeof facets.year === 'object') {
-                const yearItems = Object.keys(facets.year)
+            const yearFromFacet = facets.year_from || facets.year || {};
+            const yearToFacet = facets.year_to || facets.year || {};
+
+            if (yearFromFacet && typeof yearFromFacet === 'object') {
+                const yearItems = Object.keys(yearFromFacet)
                     .map(function(y) {
                         return {
                             value: String(y),
-                            count: Number(facets.year[y] || 0)
+                            count: Number(yearFromFacet[y] || 0)
                         };
                     })
                     .filter(function(i) {
@@ -1417,16 +1421,31 @@
                     modalKey: 'year-from',
                     clearText: 'Any'
                 }, yearItems, function(v) {
-                    return String(v);
+                    return 'Up to ' + String(v);
                 });
+            }
+            if (yearToFacet && typeof yearToFacet === 'object') {
+                const yearToItems = Object.keys(yearToFacet)
+                    .map(function(y) {
+                        return {
+                            value: String(y),
+                            count: Number(yearToFacet[y] || 0)
+                        };
+                    })
+                    .filter(function(i) {
+                        return (i.count || 0) >= 1;
+                    })
+                    .sort(function(a, b) {
+                        return Number(b.value) - Number(a.value);
+                    });
                 rebuildLists(form, {
                     facetKey: 'year',
                     buttonId: 'yeartoDropdown',
                     inputId: 'yeartoInput',
                     modalKey: 'year-to',
                     clearText: 'Any'
-                }, yearItems, function(v) {
-                    return String(v);
+                }, yearToItems, function(v) {
+                    return 'Up to ' + String(v);
                 });
             }
 
