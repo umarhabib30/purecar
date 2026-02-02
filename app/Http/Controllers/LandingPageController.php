@@ -159,10 +159,14 @@ class landingPageController extends Controller
         return $facetService->buildFacets($statusQuery, new Request([]), $facetService->allowedFilters());
     });
 
+    $totalResults = Car::whereHas('advert', function ($query) {
+        $query->where('status', 'active');
+    })->count();
     return view('landing_page', compact(
         'data',
         'events',
         'search_field',
+        'totalResults',
         'blogs',
         'sections',
         'brands',

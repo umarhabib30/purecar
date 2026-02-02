@@ -107,7 +107,7 @@ Route::get('/adverts/{image}', function ($image) {
     }
 });
 
-Route::post('/filter', [FilterSearchPageController::class, 'filter'])->name('filter');
+Route::match(['get', 'post'], '/filter', [FilterSearchPageController::class, 'filter'])->name('filter');
 
 Route::get('/get-filtered-fields', [CarController::class, 'getFilteredFields'])->name('get.filtered.fields');
 Route::get('/get-filtered-fieldssale', [CarController::class, 'getFilteredFieldssale'])->name('get.filtered.fields.sale');
@@ -354,7 +354,7 @@ Route::get('/cars-for-sale/{make}/{location}', [SeoController::class, 'index'])
     ->name('seo.make.location');
 
 
-Route::post('/forsalesfilter',[CarController::class,'search_car'])->name('forsale_filter');
+Route::match(['get', 'post'], '/forsalesfilter', [CarController::class, 'search_car'])->name('forsale_filter');
 Route::post('/count-cars', [CarController::class,'countCars'])->name('count.cars');
 Route::get('/searchcar',[CarController::class,'search_car'])->name('search_car');
 Route::get('/dealer/{slugOrId}/sold-cars', [DealerController::class, 'DealerSoldCars'])->name('dealer.soldcars');
@@ -555,7 +555,6 @@ Route::post('/email/verification-notification', function (Request $request) {
     
     return back()->with('success', 'Verification link sent successfully.');
 })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
-
 
 
 

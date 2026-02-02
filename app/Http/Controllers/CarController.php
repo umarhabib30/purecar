@@ -76,6 +76,9 @@ class CarController extends Controller
         if (!empty($validated['year_to'])) {
             $query->where('year', '<=', $validated['year_to']);
         }
+        if (!empty($validated['price_from']) || !empty($validated['price_to'])) {
+            $query->where('price', '>', 0);
+        }
         if (!empty($validated['price_from'])) {
             $query->where('price', '>=', $validated['price_from']);
         }
@@ -185,8 +188,6 @@ class CarController extends Controller
             ['min' => 8000, 'max' => 8500],
             ['min' => 8500, 'max' => 9000],
             ['min' => 9000, 'max' => 9500],
-     
-           
             ['min' => 10000, 'max' => 20000],
             ['min' => 20000, 'max' => 30000],
             ['min' => 30000, 'max' => 40000],
@@ -197,27 +198,33 @@ class CarController extends Controller
             ['min' => 80000, 'max' => 90000],
             ['min' => 90000, 'max' => 100000],
             ['min' => 100000, 'max' => 200000],
-          
         ];
-       $price_counts = [];
+        $price_counts = [];
+        $bucket_counts = [];
+        $total_price = 0;
         foreach ($price_ranges as $range) {
             $count = Car::whereBetween('price', [$range['min'], $range['max']])
                 ->whereHas('advert', function ($query) {
                     $query->where('status', 'active');
                 })
                 ->count();
-            $price_counts[] = [
-                'min' => $range['min'],
-                'max' => $range['max'],
-                'count' => $count
-            ];
+            $bucket_counts[] = (int) $count;
+            $total_price += (int) $count;
         }
-        foreach ($price_ranges as $range) {
-            $count = Car::whereBetween('price', [$range['min'], $range['max']])->count();
+        $cumulative_to = 0;
+        foreach ($price_ranges as $idx => $range) {
+            $bucket_count = (int) ($bucket_counts[$idx] ?? 0);
+            $cumulative_before = $cumulative_to;
+            $cumulative_to += $bucket_count;
+            $count_to = $cumulative_to;
+            $count_from = max($total_price - $cumulative_before, 0);
+
             $price_counts[] = [
                 'min' => $range['min'],
                 'max' => $range['max'],
-                'count' => $count
+                'count' => $count_to,
+                'count_to' => $count_to,
+                'count_from' => $count_from,
             ];
         }
         $miles_ranges = [
@@ -385,14 +392,16 @@ class CarController extends Controller
             $statusQuery = $facetService->buildStatusQuery();
             return $facetService->buildFacets($statusQuery, new Request([]), $facetService->allowedFilters());
         });
-
+        $totalResults = Car::whereHas('advert', function ($query) {
+            $query->where('status', 'active');
+        })->count();
         return view('forsale_page', compact(
             'cars', 'count', 'search_field', 'makeselected', 'fuel_typeselected',
             'colorsselected', 'engine_sizeselected', 'doorsselected', 'body_typeselected',
             'gear_boxselected', 'seller_typeselected', 'milesselected', 'modelselected',
             'variantselected', 'year_ranges', 'year_counts', 'price_ranges', 'price_counts',
             'pricefromselected', 'pricetoselected', 'yeartoselected', 'yearfromselected','totalCount',
-            'initialFacets'
+            'initialFacets', 'totalResults'
         ));
     }
  
@@ -442,6 +451,10 @@ public function getFilteredFields(Request $request)
         
         // Apply price filters (excluding if 'price' is in excludeFilters)
         if (!in_array('price', $excludeFilters)) {
+            if (($request->has('pricefrom') && $request->get('pricefrom') !== '') ||
+                ($request->has('priceto') && $request->get('priceto') !== '')) {
+                $query->where('price', '>', 0);
+            }
             if ($request->has('pricefrom') && $request->get('pricefrom') !== '') {
                 $query->where('price', '>=', $request->get('pricefrom'));
             }
@@ -518,6 +531,7 @@ public function getFilteredFields(Request $request)
             ]),
             
         'price' => $createFilteredQuery('price', ['price'])
+            ->where('price', '>', 0)
             ->orderBy('price', 'asc')
             ->get()
             ->map(fn($item) => [
@@ -567,10 +581,12 @@ public function getFilteredFieldssale(Request $request)
     
     
     if ($request->has('pricefrom') && $request->get('pricefrom') !== '') {
+        $baseQuery->where('price', '>', 0);
         $baseQuery->where('price', '>=', $request->get('pricefrom'));
     }
     
     if ($request->has('priceto') && $request->get('priceto') !== '') {
+        $baseQuery->where('price', '>', 0);
         $baseQuery->where('price', '<=', $request->get('priceto'));
     }
     
@@ -608,6 +624,10 @@ public function getFilteredFieldssale(Request $request)
         
   
         if (!in_array('price', $excludeFilters)) {
+            if (($request->has('pricefrom') && $request->get('pricefrom') !== '') ||
+                ($request->has('priceto') && $request->get('priceto') !== '')) {
+                $query->where('price', '>', 0);
+            }
             if ($request->has('pricefrom') && $request->get('pricefrom') !== '') {
                 $query->where('price', '>=', $request->get('pricefrom'));
             }
@@ -679,9 +699,11 @@ public function getFilteredFieldssale(Request $request)
             
             // Apply price filters
             if ($request->has('pricefrom') && $request->get('pricefrom') !== '') {
+                $query->where('price', '>', 0);
                 $query->where('price', '>=', $request->get('pricefrom'));
             }
             if ($request->has('priceto') && $request->get('priceto') !== '') {
+                $query->where('price', '>', 0);
                 $query->where('price', '<=', $request->get('priceto'));
             }
             
@@ -724,6 +746,7 @@ public function getFilteredFieldssale(Request $request)
             ]),
             
         'price' => $createFilteredQuery('price', ['price'])
+            ->where('price', '>', 0)
             ->orderBy('price', 'asc')
             ->get()
             ->map(fn($item) => [
@@ -801,6 +824,9 @@ public function countCars(Request $request)
     }
     if (!empty($validated['year_to'])) {
         $query->where('year', '<=', $validated['year_to']);
+    }
+    if (!empty($validated['price_from']) || !empty($validated['price_to'])) {
+        $query->where('price', '>', 0);
     }
     if (!empty($validated['price_from'])) {
         $query->where('price', '>=', $validated['price_from']);
@@ -888,6 +914,9 @@ public function sortCars(Request $request)
         }
         if (!empty($validated['year_to'])) {
             $query->where('year', '<=', $validated['year_to']);
+        }
+        if (!empty($validated['price_from']) || !empty($validated['price_to'])) {
+            $query->where('price', '>', 0);
         }
         if (!empty($validated['price_from'])) {
             $query->where('price', '>=', $validated['price_from']);

@@ -175,20 +175,34 @@ class CarFacetService
 
         $priceBucketCounts = (clone $priceQuery)
             ->whereNotNull('price')
+            ->where('price', '>', 0)
             ->selectRaw("$priceBucketCase as bucket, COUNT(*) as c")
             ->groupBy('bucket')
             ->get()
             ->pluck('c', 'bucket')
             ->toArray();
 
-        $facets['price'] = collect($priceRanges)->map(function ($range) use ($priceBucketCounts) {
+        $totalPriceCount = array_sum(array_map('intval', $priceBucketCounts));
+        $cumulativeTo = 0;
+
+        $facets['price'] = collect($priceRanges)->map(function ($range) use ($priceBucketCounts, $totalPriceCount, &$cumulativeTo) {
             $min = (int) $range['min'];
             $max = (int) $range['max'];
             $label = $min . '-' . $max;
+            $bucketCount = (int) ($priceBucketCounts[$label] ?? 0);
+            $cumulativeBefore = $cumulativeTo;
+            $cumulativeTo += $bucketCount;
+
+            $countTo = $cumulativeTo;
+            $countFrom = max($totalPriceCount - $cumulativeBefore, 0);
+
             return [
                 'min' => $min,
                 'max' => $max,
-                'count' => (int) ($priceBucketCounts[$label] ?? 0),
+                // Keep count for backwards compatibility (use cumulative up-to)
+                'count' => $countTo,
+                'count_to' => $countTo,
+                'count_from' => $countFrom,
             ];
         })->values()->toArray();
 
@@ -256,8 +270,8 @@ class CarFacetService
             }
 
             // Range filters
-            if ($key === 'price_from') { $query->where('price', '>=', (float)$val); continue; }
-            if ($key === 'price_to')   { $query->where('price', '<=', (float)$val); continue; }
+            if ($key === 'price_from') { $query->where('price', '>', 0)->where('price', '>=', (float)$val); continue; }
+            if ($key === 'price_to')   { $query->where('price', '>', 0)->where('price', '<=', (float)$val); continue; }
             if ($key === 'year_from')  { $query->where('year', '>=', (int)$val); continue; }
             if ($key === 'year_to')    { $query->where('year', '<=', (int)$val); continue; }
             if ($key === 'miles')      { $query->where('miles', '<=', (int)$val); continue; }
@@ -305,4 +319,3 @@ class CarFacetService
             ->where($field, 'NOT LIKE', 'NA%');
     }
 }
-

@@ -14,16 +14,13 @@
             .filteritems {
                 gap: 0.5rem !important;
             }
-
         }
 
         @media (min-width: 769px) {
             .dropdown-menu.show {
                 max-height: 250px;
                 overflow-y: auto;
-
             }
-
         }
 
         .custom-select-list .dropdown-item {
@@ -33,7 +30,6 @@
             }
         }
 
-
         .dropdown.custom-dropdown .dropdown-toggle {
             @media (max-width: 1440px) {
                 font-size: 15px !important;
@@ -42,7 +38,6 @@
                 font-weight: 300 !important;
             }
         }
- 
 
         .dropdown.custom-dropdown .dropdown-menu .dropdown-item {
             font-size: 13px;
@@ -122,7 +117,6 @@
         .search_color {
             background-color: rgb(255, 255, 255) !important;
         }
-
 
         @media (min-width: 999px) {
             #topbarpadding {
@@ -375,21 +369,21 @@
 
             /* Hide any circular indicators that might look like radio buttons */
             /*#filterModal .dropdown-item::before,
-            #filterModal .dropdown-item::after,
-            .dropdown-item::before,
-            .dropdown-item::after {
-                display: none !important;
-                content: none !important;
-            }*/
+                    #filterModal .dropdown-item::after,
+                    .dropdown-item::before,
+                    .dropdown-item::after {
+                        display: none !important;
+                        content: none !important;
+                        }*/
 
             /* Specifically hide circles in dropdown menu items */
             /*#filterModal .dropdown-menu li::before,
-            #filterModal .dropdown-menu li::after,
-            .dropdown-menu li::before,
-            .dropdown-menu li::after {
-                display: none !important;
-                content: none !important;
-            }*/
+                    #filterModal .dropdown-menu li::after,
+                    .dropdown-menu li::before,
+                    .dropdown-menu li::after {
+                        display: none !important;
+                        content: none !important;
+                        }*/
 
             #externalDropdownList {
                 list-style: none;
@@ -531,6 +525,58 @@
 
         @media (max-width: 768px) {
 
+            /* Container scroll rahega, but native scrollbar hide ho jayegi */
+            .desktop-hero-section-text {
+                overflow-y: auto;
+                overflow-x: hidden;
+                position: relative;
+                padding-right: 18px;
+                /* indicator space */
+                scrollbar-gutter: stable;
+            }
+
+            /* ✅ Hide native scrollbar - Chrome/Edge/Safari */
+            .desktop-hero-section-text::-webkit-scrollbar {
+                width: 0 !important;
+                height: 0 !important;
+            }
+
+            /* ✅ Hide native scrollbar - Firefox */
+            .desktop-hero-section-text {
+                scrollbar-width: none;
+                /* hides scrollbar */
+            }
+
+            /* ✅ Hide native scrollbar - old Edge/IE */
+            .desktop-hero-section-text {
+                -ms-overflow-style: none;
+            }
+
+            /* ✅ Permanent custom indicator */
+            .desktop-hero-section-text .scroll-indicator {
+                position: absolute;
+                top: 8px;
+                right: 6px;
+                width: 6px;
+                height: calc(100% - 16px);
+                background: rgba(0, 0, 0, .12);
+                border-radius: 999px;
+                pointer-events: none;
+                z-index: 10;
+            }
+
+            .desktop-hero-section-text .scroll-indicator .thumb {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 40px;
+                /* JS update karega */
+                background: rgba(0, 0, 0, .45);
+                border-radius: 999px;
+                transform: translateY(0);
+            }
+
             /* Hide radio buttons in filter selects on mobile */
             #filterModal input[type="radio"],
             #filterModal .dropdown-menu input[type="radio"],
@@ -555,21 +601,21 @@
 
             /* Hide any circular indicators that might look like radio buttons */
             /*#filterModal .dropdown-item::before,
-            #filterModal .dropdown-item::after,
-            .dropdown-item::before,
-            .dropdown-item::after {
-                display: none !important;
-                content: none !important;
-            }*/
+                    #filterModal .dropdown-item::after,
+                    .dropdown-item::before,
+                    .dropdown-item::after {
+                        display: none !important;
+                        content: none !important;
+                        }*/
 
             /* Specifically hide circles in dropdown menu items */
             /*#filterModal .dropdown-menu li::before,
-            #filterModal .dropdown-menu li::after,
-            .dropdown-menu li::before,
-            .dropdown-menu li::after {
-                display: none !important;
-                content: none !important;
-            }*/
+                    #filterModal .dropdown-menu li::after,
+                    .dropdown-menu li::before,
+                    .dropdown-menu li::after {
+                        display: none !important;
+                        content: none !important;
+                        }*/
 
             .navbar.navbar-expand-lg {
                 z-index: 80 !important;
@@ -591,8 +637,9 @@
                 background: #ffffff;
                 overflow: hidden;
                 height: 90vh !important;
-                overflow: auto !important;
+                overflow: scroll !important;
             }
+
 
 
             .desktop-hero-section-text.show {
@@ -627,6 +674,68 @@
             padding: 10px 34px !important;
             font-size: 16px !important;
         }
+
+        .dropdowns.custom-dropdown .dropdown-menu .dropdown-item::before {
+            background-color: red !important;
+        }
+
+        /*dropdown css*/
+        #sortList .dropdown-item {
+            position: relative !important;
+            padding-left: 44px !important;
+        }
+
+        /* Outer ring (unselected) */
+        #sortList .dropdown-item::before {
+            content: "" !important;
+            position: absolute !important;
+            left: 18px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            width: 18px !important;
+            height: 18px !important;
+            border-radius: 50% !important;
+            border: 2px solid #cbd5e1 !important;
+            background: #fff !important;
+            /* ring ke andar white */
+        }
+
+        /* Inner dot (hidden by default) */
+        #sortList .dropdown-item::after {
+            content: "" !important;
+            position: absolute !important;
+            left: 23px !important;
+            /* (14 + 18/2) - (8/2) = 23 */
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            width: 8px !important;
+            height: 8px !important;
+            border-radius: 50% !important;
+            background: #0d6efd !important;
+            opacity: 0 !important;
+            /* default hide */
+        }
+
+        /* Selected: ring blue + show inner dot */
+        #sortList .dropdown-item.sort-selected::before {
+            border-color: #0d6efd !important;
+        }
+
+        #sortList .dropdown-item.sort-selected::after {
+            opacity: 1 !important;
+        }
+
+        /* Safety: Bootstrap active background off */
+        #sortList .dropdown-item.active,
+        #sortList .dropdown-item:active {
+            background: transparent !important;
+            color: inherit !important;
+        }
+
+        .dropdown-item.active,
+        .dropdown-item:active {
+            background-color: transparent;
+        }
     </style>
 
     <div class="hero-section-desktop">
@@ -637,13 +746,14 @@
         </div>
         <div class="desktop-hero-section-text" id="mobileSearchForm">
             <div class="desktop-hero-section-innerbox">
-                <!-- <div class="display-desktop-none d-flex justify-content-between align-items-center"
-                    style="position: sticky; top: 0; background: #fff; z-index: 1000; padding: 10px 0;">
-                    <span style="font-size: 18px; font-weight: 600;">Search</span>
-                    <button type="button" id="mobileSearchClose"
-                        style="border: 0; background: transparent; font-size: 32px; line-height: 1; padding: 0;">&times;</button>
-                </div> -->
-                @include('partials.car_search_form', ['formId' => 'heroSearchForm', 'showCloseButton' => true])
+                @include('partials.car_search_form', [
+                    'formId' => 'heroSearchForm',
+                    'showCloseButton' => true,
+                ])
+            </div>
+
+            <div class="scroll-indicator" aria-hidden="true">
+                <div class="thumb"></div>
             </div>
         </div>
     </div>
@@ -708,13 +818,13 @@
 
 
                     <?php
-                        function formatPrice($price) {
-                            return '£' . number_format($price, 0, '.', ',');
-                        }
+function formatPrice($price) {
+    return '£' . number_format($price, 0, '.', ',');
+}
 
-                        if (!empty($pricefromselected)) {
-                            $displayText = formatPrice($pricefromselected);
-                            ?>
+if (!empty($pricefromselected)) {
+    $displayText = formatPrice($pricefromselected);
+    ?>
                     <button style="background-color: #D6DDF5"
                         class="btn btn-sm d-inline-flex align-items-center w-auto px-2" id="priceFromFilterButton"
                         data-bs-toggle="modal" data-bs-target="#filterModal" data-filter-name="pricefrom">
@@ -730,9 +840,9 @@
                     </button>
                     <?php }
 
-                    if (!empty($pricetoselected)) {
-                        $displayText = formatPrice($pricetoselected);
-                        ?>
+if (!empty($pricetoselected)) {
+    $displayText = formatPrice($pricetoselected);
+    ?>
                     <button style="background-color: #D6DDF5"
                         class="btn btn-sm d-inline-flex align-items-center w-auto px-2" id="priceToFilterButton"
                         data-bs-toggle="modal" data-bs-target="#filterModal" data-filter-name="priceto">
@@ -844,14 +954,33 @@
                     </ul>
                 </div>
             </div>
-            <div class="grid-for-car-cards" id="mobilelayout" data-next-page-url="{{ $cars->nextPageUrl() }}">
+            <div class="grid-for-car-cards" id="mobilelayout" data-next-page-url="{{ $cars->nextPageUrl() }}"
+                data-prev-page-url="{{ $cars->previousPageUrl() }}"
+                data-current-page="{{ $cars->currentPage() }}"
+                data-last-page="{{ $cars->lastPage() }}"
+                data-filter-query="{{ http_build_query(request()->except(['page', '_token'])) }}">
                 @include('partials.car_list', ['cars' => $cars])
+                <div id="lazy-load-marker" style="height: 1px;"></div>
             </div>
 
             <div id="loading" style="display: none; text-align: center; margin-top: 20px;">
                 <p>Loading more cars...</p>
             </div>
+
+            {{-- Load More Button --}}
+            <div id="load-more-container" class="text-center mt-4 mb-4" style="display: none;">
+                <button id="load-more-btn" class="btn btn-dark">
+                    Load More Cars
+                </button>
+            </div>
+
+            {{-- End of Results Message --}}
+            <div id="end-of-results" class="text-center mt-4 mb-4" style="display: none;">
+                <p class="text-muted"></p>
+            </div>
+        
         </div>
+        <!-- Mobile Filter -->
         <div class="search-filter-bar">
             <button id="mobile-search-button" class="bar-section">Search</button>
             <div class="dropdown custom-dropdown">
@@ -864,19 +993,22 @@
                         <span class="header-times" data-bs-toggle="dropdown">&times;</span>
                     </li>
                     <li>
-                        <a class="dropdown-item" onclick="setSortOption('newest')" href="javascript:void(0)">Most
+                        <a class="dropdown-item" onclick="setSortOption('newest', this)" href="javascript:void(0)">Most
                             Recent</a>
                     </li>
                     <li>
-                        <a class="dropdown-item" onclick="setSortOption('low-high')" href="javascript:void(0)">Price (low
+                        <a class="dropdown-item" onclick="setSortOption('low-high', this)"
+                            href="javascript:void(0)">Price (low
                             to high)</a>
                     </li>
                     <li>
-                        <a class="dropdown-item" onclick="setSortOption('high-low')" href="javascript:void(0)">Price
+                        <a class="dropdown-item" onclick="setSortOption('high-low', this)"
+                            href="javascript:void(0)">Price
                             (high to low)</a>
                     </li>
                     <li>
-                        <a class="dropdown-item" onclick="setSortOption('mileage')" href="javascript:void(0)">Mileage
+                        <a class="dropdown-item" onclick="setSortOption('mileage', this)"
+                            href="javascript:void(0)">Mileage
                             (low to high)</a>
                     </li>
                 </ul>
@@ -907,7 +1039,8 @@
                         <!-- Sort -->
                         <div style="display: flex; align-items: center; gap: 10px;" class="paddingmobile">
                             <i class="fas fa-filter"></i>
-                            <select class="form-select bg-white w-100" name="sort" id="sort" style="height: 40px;">
+                            <select class="form-select bg-white w-100" name="sort" id="sort"
+                                style="height: 40px;">
                                 <option value="">Sort</option>
                                 <option value="most-recent">Most Recent</option>
                                 <option value="low-high">Price (low to high)</option>
@@ -998,7 +1131,7 @@
                                 @foreach ($price_counts as $price_range)
                                     <option value="{{ $price_range['min'] }}"
                                         {{ !empty($pricefromselected) && (string) $price_range['min'] === (string) $pricefromselected ? 'selected' : '' }}>
-                                        £{{ number_format($price_range['min']) }} ({{ $price_range['count'] }})
+                                        From £{{ number_format($price_range['min']) }} ({{ $price_range['count_from'] ?? $price_range['count'] }})
                                     </option>
                                 @endforeach
                             </select>
@@ -1012,7 +1145,7 @@
                                 @foreach ($price_counts as $price_range)
                                     <option value="{{ $price_range['max'] }}"
                                         {{ !empty($pricetoselected) && (string) $price_range['max'] === (string) $pricetoselected ? 'selected' : '' }}>
-                                        £{{ number_format($price_range['max']) }} ({{ $price_range['count'] }})
+                                        Up to £{{ number_format($price_range['max']) }} ({{ $price_range['count_to'] ?? $price_range['count'] }})
                                     </option>
                                 @endforeach
                             </select>
@@ -1158,11 +1291,106 @@
         </div>
     </div>
 
-   
 
-    
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        function parseNumberFromText(txt) {
+            if (!txt) return NaN;
+            return Number(String(txt).replace(/[^0-9.]/g, ''));
+        }
+
+        function getMilesFromCard(card) {
+            const mileEl = card.querySelector('.car_detail .car_detail-item');
+            return parseNumberFromText(mileEl?.textContent);
+        }
+
+        function getPriceFromCard(card) {
+            const priceEl = card.querySelector('.car_price');
+            const text = (priceEl?.textContent || '').trim();
+            if (!text || text.toUpperCase() === 'POA') return Infinity;
+            return parseNumberFromText(text);
+        }
+
+        function cacheOriginalOrder() {
+            const container = document.getElementById('mobilelayout');
+            if (!container) return;
+            const wrappers = Array.from(container.querySelectorAll(':scope > div.my-3'));
+            wrappers.forEach((w, i) => (w.dataset.originalIndex = String(i)));
+        }
+
+        // ✅ single select (remove sort-selected + active from siblings)
+        function setSelectedSortUI(option, clickedEl) {
+            // same dropdown menu ke andar operate karega
+            const menu = clickedEl?.closest('ul.dropdown-menu') ||
+                document.getElementById('sortList') ||
+                document;
+
+            const links = menu.querySelectorAll('.dropdown-item');
+            links.forEach(a => {
+                a.classList.remove('sort-selected');
+                a.classList.remove('active'); // ✅ Bootstrap active bhi remove
+                a.setAttribute('aria-current', 'false');
+            });
+
+            // target element find (fallback)
+            const target = clickedEl || menu.querySelector(`.dropdown-item[data-sort="${option}"]`);
+            if (target) {
+                target.classList.add('sort-selected');
+                target.classList.add('active'); // optional (Bootstrap)
+                target.setAttribute('aria-current', 'true');
+            }
+        }
+
+        window.setSortOption = function(option, el) {
+            // 1) UI selection (only one)
+            setSelectedSortUI(option, el);
+
+            // 2) Sorting
+            const container = document.getElementById('mobilelayout');
+            if (!container) {
+                console.warn('#mobilelayout not found');
+                return;
+            }
+
+            const items = Array.from(container.querySelectorAll(':scope > div.my-3'));
+            if (!items.length) return;
+
+            if (!items[0].dataset.originalIndex) cacheOriginalOrder();
+
+            const sorted = items.slice().sort((a, b) => {
+                if (option === 'low-high') return getPriceFromCard(a) - getPriceFromCard(b);
+                if (option === 'high-low') return getPriceFromCard(b) - getPriceFromCard(a);
+                if (option === 'mileage') return getMilesFromCard(a) - getMilesFromCard(b);
+                if (option === 'newest') return Number(a.dataset.originalIndex) - Number(b.dataset
+                    .originalIndex);
+                return 0;
+            });
+
+            const frag = document.createDocumentFragment();
+            sorted.forEach(node => frag.appendChild(node));
+            container.appendChild(frag);
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            cacheOriginalOrder();
+
+            // default select newest
+            const first = document.querySelector('#sortList .dropdown-item[data-sort="newest"]');
+            if (first) setSelectedSortUI('newest', first);
+        });
+    </script>
+
+
+
+    <script>
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
             const openBtn = document.getElementById('mobile-search-button');
             const panel = document.getElementById('mobileSearchForm');
             const closeBtn = document.querySelector('#mobileSearchForm .pc-mobile-search-close');
@@ -1173,18 +1401,19 @@
 
             function openPanel() {
                 if (!panel) return;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
                 panel.classList.add('show');
-                document.body.style.overflow = 'hidden';
+                document.body.style.overflow = 'scroll';
             }
 
             function closePanel() {
                 if (!panel) return;
                 panel.classList.remove('show');
-                document.body.style.overflow = '';
+                document.body.style.overflow = 'scroll';
             }
 
             if (openBtn) {
-                openBtn.addEventListener('click', function (e) {
+                openBtn.addEventListener('click', function(e) {
                     if (!isMobile()) return;
                     e.preventDefault();
                     openPanel();
@@ -1192,16 +1421,250 @@
             }
 
             if (closeBtn) {
-                closeBtn.addEventListener('click', function (e) {
+                closeBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     closePanel();
                 });
             }
 
-            document.addEventListener('keydown', function (e) {
+            document.addEventListener('keydown', function(e) {
                 if (!isMobile()) return;
                 if (e.key === 'Escape') closePanel();
             });
         });
     </script>
+
+    <script>
+        (function() {
+            function initScrollIndicator() {
+                const box = document.getElementById('mobileSearchForm'); // same id as you have
+                if (!box) return;
+
+                const indicator = box.querySelector('.scroll-indicator');
+                const thumb = indicator && indicator.querySelector('.thumb');
+                if (!indicator || !thumb) return;
+
+                function update() {
+                    const scrollTop = box.scrollTop;
+                    const scrollMax = box.scrollHeight - box.clientHeight;
+
+                    // agar content fit hai, indicator hide (optional)
+                    if (scrollMax <= 0) {
+                        indicator.style.display = 'none';
+                        return;
+                    }
+                    indicator.style.display = '';
+
+                    const trackH = indicator.clientHeight;
+                    const minThumb = 40;
+
+                    const thumbH = Math.max(minThumb, Math.round(trackH * (box.clientHeight / box.scrollHeight)));
+                    const maxY = trackH - thumbH;
+
+                    const ratio = scrollMax > 0 ? (scrollTop / scrollMax) : 0;
+                    const y = Math.round(maxY * ratio);
+
+                    thumb.style.height = thumbH + 'px';
+                    thumb.style.transform = 'translateY(' + y + 'px)';
+                }
+
+                box.addEventListener('scroll', update, {
+                    passive: true
+                });
+                window.addEventListener('resize', update);
+
+                // content changes par bhi update
+                if (window.ResizeObserver) {
+                    new ResizeObserver(update).observe(box);
+                }
+
+                update();
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initScrollIndicator);
+            } else {
+                initScrollIndicator();
+            }
+        })();
+    </script>
+
+    <script>
+        (function() {
+            const grid = document.getElementById('mobilelayout');
+            if (!grid) return;
+
+            let currentPage = parseInt(grid.dataset.currentPage || '1', 10);
+            let lastPage = parseInt(grid.dataset.lastPage || '1', 10);
+            let isLoading = false;
+            let userHasScrolled = false;
+            let observer = null;
+
+            const loadingEl = document.getElementById('loading');
+            const loadMoreContainer = document.getElementById('load-more-container');
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            const endOfResults = document.getElementById('end-of-results');
+            let marker = document.getElementById('lazy-load-marker');
+
+            function hasNextPage() {
+                return currentPage < lastPage;
+            }
+
+            function updateLoadMoreUI() {
+                if (!loadMoreContainer) return;
+                const isMobile = window.innerWidth <= 768;
+                loadMoreContainer.style.display = hasNextPage() && !isMobile ? 'block' : 'none';
+                if (!hasNextPage() && endOfResults) {
+                    endOfResults.style.display = 'block';
+                }
+            }
+
+            function isMobileView() {
+                return window.innerWidth <= 768;
+            }
+
+            function buildNextUrl(nextPage) {
+                const base = `${window.location.origin}${window.location.pathname}`;
+                const filterQuery = grid.dataset.filterQuery || '';
+                const params = new URLSearchParams(filterQuery);
+                params.set('page', String(nextPage));
+                const query = params.toString();
+                return query ? `${base}?${query}` : `${base}?page=${nextPage}`;
+            }
+
+            function extractHtmlFromResponse(data) {
+                if (data && typeof data === 'object') {
+                    return data.html || data.cars_html || '';
+                }
+                return '';
+            }
+
+            function appendCars(html) {
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                const pagination = temp.querySelector('.pinmx-pagination-wrap');
+                if (pagination) pagination.remove();
+
+                // Ensure marker exists and is inside the grid
+                let safeMarker = marker;
+                if (!safeMarker || safeMarker.parentNode !== grid) {
+                    safeMarker = document.createElement('div');
+                    safeMarker.id = 'lazy-load-marker';
+                    safeMarker.style.height = '1px';
+                    grid.appendChild(safeMarker);
+                }
+
+                while (temp.firstChild) {
+                    grid.insertBefore(temp.firstChild, safeMarker);
+                }
+            }
+
+            function loadMoreCars() {
+                if (isLoading || !hasNextPage()) return;
+                isLoading = true;
+
+                if (loadingEl) loadingEl.style.display = 'block';
+                if (loadMoreBtn) {
+                    loadMoreBtn.disabled = true;
+                    loadMoreBtn.textContent = 'Loading...';
+                }
+
+                if (observer && marker) {
+                    observer.unobserve(marker);
+                }
+
+                const nextPage = currentPage + 1;
+                const url = buildNextUrl(nextPage);
+
+                fetch(url, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        const html = extractHtmlFromResponse(data);
+                        if (!html) return;
+
+                        appendCars(html);
+                        if (marker) {
+                            grid.appendChild(marker);
+                        }
+
+                        currentPage = data.current_page ? parseInt(data.current_page, 10) : nextPage;
+                        if (data.last_page) {
+                            lastPage = parseInt(data.last_page, 10);
+                        }
+
+                        updateLoadMoreUI();
+                    })
+                    .catch((error) => {
+                        console.error('Lazy loading failed:', error);
+                    })
+                    .finally(() => {
+                        isLoading = false;
+                        if (loadingEl) loadingEl.style.display = 'none';
+                        if (loadMoreBtn) {
+                            loadMoreBtn.disabled = false;
+                            loadMoreBtn.textContent = 'Load More Cars';
+                        }
+                        if (observer && marker && hasNextPage()) {
+                            observer.observe(marker);
+                        }
+                    });
+            }
+
+            function initObserver() {
+                if (!marker || !('IntersectionObserver' in window)) return;
+
+                observer = new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => {
+                        if (!userHasScrolled && !isMobileView()) return;
+                        if (entry.isIntersecting) {
+                            loadMoreCars();
+                        }
+                    });
+                }, {
+                    rootMargin: '200px 0px',
+                    threshold: 0.01
+                });
+
+                observer.observe(marker);
+            }
+
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', loadMoreCars);
+            }
+
+            function onFirstScroll() {
+                if (window.scrollY > 150) {
+                    userHasScrolled = true;
+                    window.removeEventListener('scroll', onFirstScroll);
+                }
+            }
+
+            window.addEventListener('scroll', onFirstScroll, { passive: true });
+            window.addEventListener('touchmove', onFirstScroll, { passive: true });
+
+            updateLoadMoreUI();
+            initObserver();
+
+            window.addEventListener('resize', updateLoadMoreUI);
+
+            window.addEventListener('pc:forsale-results-updated', function() {
+                currentPage = parseInt(grid.dataset.currentPage || '1', 10);
+                lastPage = parseInt(grid.dataset.lastPage || '1', 10);
+                userHasScrolled = false;
+
+                marker = document.getElementById('lazy-load-marker');
+                if (observer) {
+                    observer.disconnect();
+                }
+                updateLoadMoreUI();
+                initObserver();
+            });
+        })();
+    </script>
+
 @endsection
