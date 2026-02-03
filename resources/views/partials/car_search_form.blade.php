@@ -17,6 +17,25 @@
         overflow: hidden;
     }
 
+    /* Force modal fully hidden when closed - overrides any other display/visibility so it never "half shows" */
+    .custom-select-modal.custom-select-modal--closed {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        max-height: 0 !important;
+        overflow: hidden !important;
+        pointer-events: none !important;
+        position: fixed !important;
+        left: -9999px !important;
+        top: 0 !important;
+        z-index: -1 !important;
+    }
+    .custom-select-modal.custom-select-modal--closed .custom-select-content {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
     .custom-select-content {
         background: #ffffff;
         width: 100%;
@@ -1216,9 +1235,9 @@
             // close modal if clicked inside a custom modal list
             const modal = item.closest('.custom-select-modal');
             if (modal) {
-                modal.style.display = 'none';
+                modal.classList.add(CLOSED_CLASS);
+                modal.style.setProperty('display', 'none', 'important');
                 setBodyScrollLocked(false);
-                restoreModalFromBody(modal);
             }
         }
 
@@ -1738,13 +1757,16 @@
             }
         }
 
+        var CLOSED_CLASS = 'custom-select-modal--closed';
+
         function closeAllCustomSelectModals() {
             document.querySelectorAll('.custom-select-modal').forEach(function(m) {
-                m.style.display = 'none';
-                restoreModalFromBody(m);
+                m.classList.add(CLOSED_CLASS);
+                m.style.setProperty('display', 'none', 'important');
             });
             setBodyScrollLocked(false);
         }
+        window.__closeAllCustomSelectModals = closeAllCustomSelectModals;
 
         // Mobile: open custom modal when clicking dropdown toggles that have data-dropdown
         document.querySelectorAll('form.filter-box .dropdown-toggle[data-dropdown]').forEach(function(btn) {
@@ -1773,8 +1795,24 @@
                 if (form && isLandingScope(form)) {
                     moveModalToBody(modal, form.id || '');
                 }
+                modal.classList.remove(CLOSED_CLASS);
+                modal.style.removeProperty('display');
                 modal.style.display = 'flex';
                 setBodyScrollLocked(true);
+                history.pushState({ customSelectOpen: true }, '', location.href);
+                if (typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                    var openMenus = document.querySelectorAll('.dropdown-menu.show');
+                    openMenus.forEach(function(menu) {
+                        var dropdown = menu.closest('.dropdown');
+                        if (dropdown) {
+                            var t = dropdown.querySelector('[data-bs-toggle="dropdown"]');
+                            if (t && t.getAttribute('data-dropdown')) {
+                                var inst = bootstrap.Dropdown.getInstance(t);
+                                if (inst) inst.hide();
+                            }
+                        }
+                    });
+                }
             });
         });
 
@@ -1782,9 +1820,9 @@
         document.querySelectorAll('form.filter-box .custom-select-modal').forEach(function(modal) {
             modal.addEventListener('click', function(e) {
                 if (e.target === modal) {
-                    modal.style.display = 'none';
+                    modal.classList.add(CLOSED_CLASS);
+                    modal.style.setProperty('display', 'none', 'important');
                     setBodyScrollLocked(false);
-                    restoreModalFromBody(modal);
                 }
             });
         });
@@ -1795,9 +1833,11 @@
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
                 const modal = btn.closest('.custom-select-modal');
-                if (modal) modal.style.display = 'none';
+                if (modal) {
+                    modal.classList.add(CLOSED_CLASS);
+                    modal.style.setProperty('display', 'none', 'important');
+                }
                 setBodyScrollLocked(false);
-                if (modal) restoreModalFromBody(modal);
             });
         });
 

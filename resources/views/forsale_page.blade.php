@@ -224,6 +224,18 @@
                 display: none !important;
             }
 
+            /* When filter modal is open on mobile: hide navbar and lock body scroll */
+            body.forsale-filter-open .navbar {
+                display: none !important;
+            }
+
+            body.forsale-filter-open {
+                overflow: hidden !important;
+                position: fixed !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+
             #filterModal {
                 padding: 0 !important;
                 background: white !important;
@@ -234,6 +246,7 @@
                 max-width: 100% !important;
                 width: 100% !important;
                 height: 100vh !important;
+                height: 100dvh !important;
                 position: fixed !important;
                 top: 0 !important;
                 left: 0 !important;
@@ -241,20 +254,22 @@
 
             #filterModal .modal-content {
                 border-radius: 0 !important;
-                margin-top: -50px !important;
+                margin-top: 0 !important;
                 padding-top: 0 !important;
 
                 background: white !important;
                 border: none !important;
                 height: 100vh !important;
+                height: 100dvh !important;
                 display: flex !important;
                 flex-direction: column !important;
                 box-shadow: none !important;
+                overflow: hidden !important;
 
             }
 
             #filterModal .modal-header {
-                position: fixed !important;
+                flex-shrink: 0 !important;
                 top: 0 !important;
                 left: 0 !important;
                 right: 0 !important;
@@ -262,31 +277,31 @@
                 z-index: 1000 !important;
                 padding: 1rem !important;
                 border: none !important;
-
-
+                border-bottom: 1px solid #eee !important;
             }
 
             #filterModal .modal-body {
-
                 flex: 1 !important;
+                min-height: 0 !important;
                 overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch !important;
                 padding: 1rem !important;
-                margin-bottom: 100px !important;
-                padding-top: 0px !important;
-                margin-top: 0px !important;
-
-
+                padding-bottom: 100px !important;
+                padding-top: 0.5rem !important;
+                margin-top: 0 !important;
             }
 
             #filterModal .modal-footer {
-                position: fixed !important;
-                bottom: 5% !important;
+                flex-shrink: 0 !important;
+                position: sticky !important;
+                bottom: 0 !important;
                 left: 0 !important;
                 right: 0 !important;
                 background: white !important;
                 z-index: 1000 !important;
                 padding: 1rem !important;
                 border: none !important;
+                border-top: 1px solid #eee !important;
             }
 
             .bottonbuttons {
@@ -636,7 +651,8 @@
                 z-index: 75 !important;
                 background: #ffffff;
                 overflow: hidden;
-                height: 90vh !important;
+                height: 100vh !important;
+                height: 100dvh !important;
                 overflow: scroll !important;
             }
 
@@ -653,7 +669,7 @@
                 }
 
                 to {
-                    top: 70px;
+                    top: 0;
                 }
             }
 
@@ -1390,10 +1406,53 @@ if (!empty($pricetoselected)) {
         }
     </script>
     <script>
+        (function () {
+            var filterModal = document.getElementById('filterModal');
+            if (!filterModal) return;
+            var mobileMaxWidth = 990;
+            var savedScrollY = 0;
+
+            function isMobile() {
+                return window.innerWidth <= mobileMaxWidth;
+            }
+
+            function openFilter() {
+                if (isMobile()) {
+                    savedScrollY = window.scrollY || window.pageYOffset;
+                    document.body.classList.add('forsale-filter-open');
+                    history.pushState({ forsaleFilter: 'modal' }, '', location.href);
+                }
+            }
+
+            function closeFilter() {
+                document.body.classList.remove('forsale-filter-open');
+                if (isMobile() && savedScrollY !== undefined) {
+                    requestAnimationFrame(function () {
+                        window.scrollTo(0, savedScrollY);
+                    });
+                }
+            }
+
+            window.__forsaleCloseFilterModal = function () {
+                var M = typeof bootstrap !== 'undefined' && bootstrap.Modal;
+                if (M && filterModal) {
+                    var inst = M.getInstance(filterModal);
+                    if (inst) inst.hide();
+                }
+            };
+
+            filterModal.addEventListener('show.bs.modal', openFilter);
+            filterModal.addEventListener('shown.bs.modal', openFilter);
+            filterModal.addEventListener('hide.bs.modal', closeFilter);
+            filterModal.addEventListener('hidden.bs.modal', closeFilter);
+        })();
+    </script>
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             const openBtn = document.getElementById('mobile-search-button');
             const panel = document.getElementById('mobileSearchForm');
             const closeBtn = document.querySelector('#mobileSearchForm .pc-mobile-search-close');
+            var savedScrollY = 0;
 
             function isMobile() {
                 return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
@@ -1401,16 +1460,27 @@ if (!empty($pricetoselected)) {
 
             function openPanel() {
                 if (!panel) return;
+                if (isMobile()) {
+                    savedScrollY = window.scrollY || window.pageYOffset;
+                    document.body.classList.add('forsale-filter-open');
+                    history.pushState({ forsaleFilter: 'search' }, '', location.href);
+                }
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 panel.classList.add('show');
-                document.body.style.overflow = 'scroll';
             }
 
             function closePanel() {
                 if (!panel) return;
                 panel.classList.remove('show');
-                document.body.style.overflow = 'scroll';
+                if (isMobile()) {
+                    document.body.classList.remove('forsale-filter-open');
+                    requestAnimationFrame(function() {
+                        window.scrollTo(0, savedScrollY);
+                    });
+                }
             }
+
+            window.__forsaleCloseSearchPanel = closePanel;
 
             if (openBtn) {
                 openBtn.addEventListener('click', function(e) {
@@ -1432,6 +1502,78 @@ if (!empty($pricetoselected)) {
                 if (e.key === 'Escape') closePanel();
             });
         });
+    </script>
+    <script>
+        (function () {
+            function isMobile() {
+                return window.matchMedia && window.matchMedia('(max-width: 990px)').matches;
+            }
+
+            function closeAnyOpenDropdowns() {
+                var openMenus = document.querySelectorAll('.dropdown-menu.show');
+                if (typeof bootstrap !== 'undefined' && bootstrap.Dropdown && openMenus.length) {
+                    openMenus.forEach(function (menu) {
+                        var dropdown = menu.closest('.dropdown');
+                        if (dropdown) {
+                            var toggle = dropdown.querySelector('[data-bs-toggle="dropdown"]');
+                            if (toggle) {
+                                var inst = bootstrap.Dropdown.getInstance(toggle);
+                                if (inst) inst.hide();
+                            }
+                        }
+                    });
+                }
+            }
+
+            function hasOpenCustomSelectModal() {
+                var modals = document.querySelectorAll('.custom-select-modal');
+                for (var i = 0; i < modals.length; i++) {
+                    if (modals[i].style.display === 'flex') return true;
+                }
+                return false;
+            }
+
+            document.addEventListener('shown.bs.dropdown', function (e) {
+                if (!isMobile()) return;
+                var toggle = e.target;
+                if (toggle && toggle.getAttribute && toggle.getAttribute('data-dropdown')) return;
+                history.pushState({ forsaleFilter: 'dropdown' }, '', location.href);
+            });
+
+            window.addEventListener('popstate', function (e) {
+                if (!isMobile()) return;
+                var panel = document.getElementById('mobileSearchForm');
+                var filterModal = document.getElementById('filterModal');
+                if (window.__closeAllCustomSelectModals && hasOpenCustomSelectModal()) {
+                    window.__closeAllCustomSelectModals();
+                    history.pushState({ forsaleFilter: null }, '', location.href);
+                    return;
+                }
+                if (document.querySelectorAll('.dropdown-menu.show').length) {
+                    closeAnyOpenDropdowns();
+                    history.pushState({ forsaleFilter: null }, '', location.href);
+                    return;
+                }
+                if (filterModal && filterModal.classList.contains('show')) {
+                    if (window.__forsaleCloseFilterModal) {
+                        window.__forsaleCloseFilterModal();
+                        history.pushState({ forsaleFilter: null }, '', location.href);
+                    }
+                    return;
+                }
+                if (panel && panel.classList.contains('show')) {
+                    if (window.__forsaleCloseSearchPanel) {
+                        window.__forsaleCloseSearchPanel();
+                        history.pushState({ forsaleFilter: null }, '', location.href);
+                    }
+                    return;
+                }
+            });
+
+            document.addEventListener('DOMContentLoaded', function () {
+                history.replaceState({ forsaleFilter: null }, '', location.href);
+            });
+        })();
     </script>
 
     <script>

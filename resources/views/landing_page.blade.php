@@ -983,5 +983,59 @@ setInterval(updateBrands, 5000);
 </style>
 <!-- Landing page modal JS removed (handled elsewhere) -->
 
+<script>
+    (function () {
+        function isMobile() {
+            return window.matchMedia && window.matchMedia('(max-width: 990px)').matches;
+        }
+        function hasOpenCustomSelectModal() {
+            var modals = document.querySelectorAll('.custom-select-modal');
+            for (var i = 0; i < modals.length; i++) {
+                if (modals[i].style.display === 'flex') return true;
+            }
+            return false;
+        }
+        function closeAnyOpenDropdowns() {
+            var openMenus = document.querySelectorAll('.dropdown-menu.show');
+            if (typeof bootstrap !== 'undefined' && bootstrap.Dropdown && openMenus.length) {
+                openMenus.forEach(function (menu) {
+                    var dropdown = menu.closest('.dropdown');
+                    if (dropdown) {
+                        var toggle = dropdown.querySelector('[data-bs-toggle="dropdown"]');
+                        if (toggle) {
+                            var inst = bootstrap.Dropdown.getInstance(toggle);
+                            if (inst) inst.hide();
+                        }
+                    }
+                });
+            }
+        }
+        document.addEventListener('shown.bs.dropdown', function (e) {
+            if (!isMobile()) return;
+            var toggle = e.target;
+            if (toggle && toggle.getAttribute && toggle.getAttribute('data-dropdown')) return;
+            history.pushState({ customSelectOpen: true }, '', location.href);
+        });
+        window.addEventListener('popstate', function () {
+            if (!isMobile()) return;
+            if (window.__closeAllCustomSelectModals && hasOpenCustomSelectModal()) {
+                window.__closeAllCustomSelectModals();
+                document.querySelectorAll('.custom-select-modal').forEach(function (m) {
+                    m.classList.add('custom-select-modal--closed');
+                });
+                history.pushState({ customSelectOpen: null }, '', location.href);
+                return;
+            }
+            if (document.querySelectorAll('.dropdown-menu.show').length) {
+                closeAnyOpenDropdowns();
+                history.pushState({ customSelectOpen: null }, '', location.href);
+            }
+        });
+        document.addEventListener('DOMContentLoaded', function () {
+            history.replaceState({ customSelectOpen: null }, '', location.href);
+        });
+    })();
+</script>
+
 @endsection
 
