@@ -1647,62 +1647,74 @@
         }
 
 
-        function postFilterForm(form) {
-            if (!form || !form.action) return;
+        var FILTER_DEBOUNCE_MS = 320;
 
-            // Prevent out-of-order responses from older requests overwriting newer totals/options.
+        function doPostFilterForm(form) {
+            if (!form || !form.action) return;
+            if (form._filterXhr) {
+                form._filterXhr.abort();
+                form._filterXhr = null;
+            }
             const nextSeq = (Number(form.dataset.reqSeq || '0') || 0) + 1;
             form.dataset.reqSeq = String(nextSeq);
             const requestSeq = nextSeq;
-
             const token = getCsrfToken(form);
             const params = new URLSearchParams(new FormData(form)).toString();
-
             setSearchButtonLoading(form, true);
-
             const xhr = new XMLHttpRequest();
+            form._filterXhr = xhr;
             xhr.open((form.method || 'POST').toUpperCase(), form.action, true);
             xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
             xhr.setRequestHeader('Accept', 'application/json');
             xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
             if (token) xhr.setRequestHeader('X-CSRF-TOKEN', token);
-
             xhr.onreadystatechange = function() {
                 if (xhr.readyState !== 4) return;
+                if (form._filterXhr === xhr) form._filterXhr = null;
                 if (String(form.dataset.reqSeq || '') !== String(requestSeq)) return;
-
+                var payload = null;
                 try {
-                    const contentType = xhr.getResponseHeader('content-type') || '';
-                    const payload = contentType.includes('application/json') ?
-                        JSON.parse(xhr.responseText || '{}') :
-                        null;
-
-                    if (payload && payload.facets) {
-                        applyFacetsToForm(form, payload.facets);
-                    }
-                    enforceMakeModelVariantCascade(form);
-                    if (payload) {
-                        updateForsaleResults(payload, form);
-                        if (typeof payload.total !== 'undefined') {
-                            setSearchButtonTotal(form, payload.total);
+                    var contentType = xhr.getResponseHeader('content-type') || '';
+                    payload = contentType.indexOf('application/json') !== -1 ?
+                        JSON.parse(xhr.responseText || '{}') : null;
+                } catch (e) {}
+                var fForm = form;
+                var fPayload = payload;
+                requestAnimationFrame(function() {
+                    try {
+                        if (fPayload && fPayload.facets) applyFacetsToForm(fForm, fPayload.facets);
+                        enforceMakeModelVariantCascade(fForm);
+                        if (fPayload) {
+                            updateForsaleResults(fPayload, fForm);
+                            if (typeof fPayload.total !== 'undefined') setSearchButtonTotal(fForm, fPayload.total);
                         }
+                    } finally {
+                        setSearchButtonLoading(fForm, false);
                     }
-
-                    console.log('Filter response:', payload ?? xhr.responseText);
-                } catch (e) {
-                    console.log('Filter response:', xhr.responseText);
-                }
-
-                setSearchButtonLoading(form, false);
+                });
             };
-
             xhr.onerror = function() {
-                console.error('Filter request failed');
+                if (form._filterXhr === xhr) form._filterXhr = null;
                 if (String(form.dataset.reqSeq || '') !== String(requestSeq)) return;
                 setSearchButtonLoading(form, false);
             };
-
+            xhr.onabort = function() {
+                if (form._filterXhr === xhr) form._filterXhr = null;
+                setSearchButtonLoading(form, false);
+            };
             xhr.send(params);
+        }
+
+        function postFilterForm(form) {
+            if (!form || !form.action) return;
+            if (form._filterDebounceTimer) {
+                clearTimeout(form._filterDebounceTimer);
+                form._filterDebounceTimer = null;
+            }
+            form._filterDebounceTimer = setTimeout(function() {
+                form._filterDebounceTimer = null;
+                doPostFilterForm(form);
+            }, FILTER_DEBOUNCE_MS);
         }
 
         function clearAllForm(form) {
@@ -1896,12 +1908,11 @@
                 if (hasForsaleGrid) {
                     e.preventDefault();
                     postFilterForm(form);
-                    // On the for-sale mobile overlay, close the panel after applying filters
+                    // On the for-sale mobile overlay, close the panel so scroll/header are restored
                     if (isMobile && isMobile()) {
-                        const container = form.closest('#mobileSearchForm');
-                        if (container && container.classList.contains('show')) {
-                            container.classList.remove('show');
-                            document.body.style.overflow = '';
+                        var container = form.closest('#mobileSearchForm');
+                        if (container && container.classList.contains('show') && typeof window.__forsaleCloseSearchPanel === 'function') {
+                            window.__forsaleCloseSearchPanel();
                         }
                     }
                     return;

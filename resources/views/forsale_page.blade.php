@@ -1445,6 +1445,16 @@ if (!empty($pricetoselected)) {
             filterModal.addEventListener('shown.bs.modal', openFilter);
             filterModal.addEventListener('hide.bs.modal', closeFilter);
             filterModal.addEventListener('hidden.bs.modal', closeFilter);
+
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState !== 'visible') return;
+                var panel = document.getElementById('mobileSearchForm');
+                var modalOpen = filterModal && filterModal.classList.contains('show');
+                var panelOpen = panel && panel.classList.contains('show');
+                if (!modalOpen && !panelOpen && document.body.classList.contains('forsale-filter-open')) {
+                    document.body.classList.remove('forsale-filter-open');
+                }
+            });
         })();
     </script>
     <script>
