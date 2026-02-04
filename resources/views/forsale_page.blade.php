@@ -952,19 +952,19 @@ if (!empty($pricetoselected)) {
                     </button>
                     <ul class="dropdown-menu overflow-auto" id="sortList">
                         <li>
-                            <a class="dropdown-item" onclick="setSortOption('newest')" href="javascript:void(0)">Most
+                            <a class="dropdown-item" onclick="setSortOption('newest', this)" href="javascript:void(0)">Most
                                 Recent</a>
                         </li>
                         <li>
-                            <a class="dropdown-item" onclick="setSortOption('low-high')" href="javascript:void(0)">Price
+                            <a class="dropdown-item" onclick="setSortOption('low-high', this)" href="javascript:void(0)">Price
                                 (low to high)</a>
                         </li>
                         <li>
-                            <a class="dropdown-item" onclick="setSortOption('high-low')" href="javascript:void(0)">Price
+                            <a class="dropdown-item" onclick="setSortOption('high-low', this)" href="javascript:void(0)">Price
                                 (high to low)</a>
                         </li>
                         <li>
-                            <a class="dropdown-item" onclick="setSortOption('mileage')" href="javascript:void(0)">Mileage
+                            <a class="dropdown-item" onclick="setSortOption('mileage', this)" href="javascript:void(0)">Mileage
                                 (low to high)</a>
                         </li>
                     </ul>

@@ -123,10 +123,12 @@
 
         .filter-box .dropdown-menu .dropdown-item.selected-option::before {
             outline: 1px solid #388BF7;
-            background-color: #388BF7;
+            background-color: #388BF7 !important;
         }
     }
+    .dropdown.custom-dropdown .dropdown-toggle {
 
+}
     @media (max-width: 768px) {
 
         .custom-select-header {
@@ -167,8 +169,9 @@
             font-size: 15px !important;
         }
 
-        .dropdowns.custom-dropdown .dropdown-menu .dropdown-item::before {
-            background: #09039b !important;
+        .custom-select-list .dropdown-item.selected-option::before {
+            outline: 1px solid #388BF7;
+            background-color: #388BF7 !important;
         }
 
         .custom-select-list .dropdown-item::before {
@@ -290,6 +293,56 @@
     }
 
     #variantDropdown {}
+
+    #sortList .dropdown-item{
+  position: relative;
+  padding-left: 44px;
+}
+
+/* Outer ring (unselected) */
+#sortList .dropdown-item::before{
+  content:"";
+  position:absolute;
+  left:14px;
+  top:50%;
+  transform: translateY(-50%);
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  border:2px solid #cbd5e1;
+  background:transparent !important;           /* ring ke andar white */
+}
+
+/* Inner dot (hidden by default) */
+#sortList .dropdown-item::after{
+  content:"";
+  position:absolute;
+  left:23px;                 /* (14 + 18/2) - (8/2) = 23 */
+  top:50%;
+  transform: translateY(-50%);
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#0d6efd !important;
+  opacity:0;                 /* default hide */
+}
+
+/* Selected: ring blue + show inner dot */
+#sortList .dropdown-item.sort-selected::before{
+  border-color:#0d6efd;
+}
+
+#sortList .dropdown-item.sort-selected::after{
+  opacity:1;
+}
+
+/* Safety: Bootstrap active background off */
+#sortList .dropdown-item.active,
+#sortList .dropdown-item:active{
+  background: transparent !important;
+  color: inherit !important;
+}
+
 
     /* Hide the "Close" button everywhere by default (we enable it only on for-sale page mobile). */
     .pc-mobile-search-close {

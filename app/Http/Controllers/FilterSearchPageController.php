@@ -24,9 +24,38 @@ class FilterSearchPageController extends Controller
         // 2) Build facets (exclude-self) for dropdowns
         $facets = $facetService->buildFacets($statusQuery, $request, $allowedFilters);
 
-        // 3) Cars list
-        $cars = (clone $baseQuery)
-            ->orderByDesc('car_id')
+        // 3) Cars list (apply sort from request; does not change filters)
+        $sortQuery = clone $baseQuery;
+        $sort = $request->get('sort');
+        if ($sort && in_array($sort, ['most-recent', 'low-high', 'high-low', 'mileage', 'mileage-low', 'newest', 'oldest'], true)) {
+            switch ($sort) {
+                case 'low-high':
+                    $sortQuery->orderBy('price', 'asc');
+                    break;
+                case 'high-low':
+                    $sortQuery->orderBy('price', 'desc');
+                    break;
+                case 'mileage':
+                    $sortQuery->orderBy('miles', 'asc');
+                    break;
+                case 'mileage-low':
+                    $sortQuery->orderBy('miles', 'desc');
+                    break;
+                case 'newest':
+                    $sortQuery->orderBy('year', 'desc');
+                    break;
+                case 'oldest':
+                    $sortQuery->orderBy('year', 'asc');
+                    break;
+                case 'most-recent':
+                default:
+                    $sortQuery->orderBy('created_at', 'desc');
+                    break;
+            }
+        } else {
+            $sortQuery->orderByDesc('car_id');
+        }
+        $cars = $sortQuery
             ->paginate(20)
             ->appends($request->except('_token')) // ✅ keeps filters in pagination links
             ->withPath(route('forsale_filter')); // ✅ ensure pagination links go to HTML page

@@ -72,6 +72,9 @@ class CarFacetService
                 $this->excludeNaPlaceholders($qq, 'make');
             });
 
+        // Exclude cars with no price (POA) from all results/facets.
+        $q->whereNotNull('price')->where('price', '>', 0);
+
         return $q;
     }
 
