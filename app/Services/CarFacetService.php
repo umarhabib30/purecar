@@ -140,9 +140,11 @@ class CarFacetService
             $cumulativeTo[$key] = $running;
         }
 
-        // Cumulative "from year" (<= year) to match Year To direction
-        $facets['year_from'] = $cumulativeTo;
-        $facets['year_to'] = $cumulativeTo;
+        // Only include years that have at least one car (same behaviour as make/model etc.)
+        $facets['year_from'] = array_filter($cumulativeTo, function ($yearKey) use ($yearCounts) {
+            return (int) ($yearCounts[$yearKey] ?? 0) >= 1;
+        }, ARRAY_FILTER_USE_KEY);
+        $facets['year_to'] = $facets['year_from'];
 
         // Price breakpoints: 1k-15k in 1k steps, then 20k-120k in 5k steps
         $pricePoints = array_merge(
@@ -155,14 +157,44 @@ class CarFacetService
 
         $basePriceQuery = (clone $priceQuery)->whereNotNull('price')->where('price', '>', 0);
 
+        $minPrice = (clone $basePriceQuery)->min('price');
+        $maxPrice = (clone $basePriceQuery)->max('price');
+
+        // Only include price points between min and max in the result set (same behaviour as other fields)
+        $pricePointsFiltered = $pricePoints;
+        if ($minPrice !== null && $maxPrice !== null) {
+            $minPrice = (float) $minPrice;
+            $maxPrice = (float) $maxPrice;
+            $pricePointsFiltered = array_values(array_filter($pricePoints, function ($p) use ($minPrice, $maxPrice) {
+                return $p >= $minPrice && $p <= $maxPrice;
+            }));
+            // When count is 1 (or few), the only car's price may not match a breakpoint (e.g. £5500).
+            // Include at least the smallest breakpoint >= min and largest <= max so price from/to always have options.
+            if ($pricePointsFiltered === []) {
+                $firstAbove = null;
+                $lastBelow = null;
+                foreach ($pricePoints as $p) {
+                    if ($p >= $minPrice && $firstAbove === null) {
+                        $firstAbove = $p;
+                    }
+                    if ($p <= $maxPrice) {
+                        $lastBelow = $p;
+                    }
+                }
+                $pricePointsFiltered = array_values(array_unique(array_filter([$firstAbove, $lastBelow])));
+            }
+        } elseif ($minPrice === null || $maxPrice === null) {
+            $pricePointsFiltered = [];
+        }
+
         $countTo = [];
         $countFrom = [];
-        foreach ($pricePoints as $p) {
+        foreach ($pricePointsFiltered as $p) {
             $countTo[$p] = (clone $basePriceQuery)->where('price', '<=', $p)->count();
             $countFrom[$p] = (clone $basePriceQuery)->where('price', '>=', $p)->count();
         }
 
-        $facets['price'] = collect($pricePoints)->map(function ($value) use ($countTo, $countFrom) {
+        $facets['price'] = collect($pricePointsFiltered)->map(function ($value) use ($countTo, $countFrom) {
             return [
                 'min' => $value,
                 'max' => $value,

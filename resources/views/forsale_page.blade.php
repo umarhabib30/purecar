@@ -952,19 +952,19 @@ if (!empty($pricetoselected)) {
                     </button>
                     <ul class="dropdown-menu overflow-auto" id="sortList">
                         <li>
-                            <a class="dropdown-item" onclick="setSortOption('newest', this)" href="javascript:void(0)">Most
+                            <a class="dropdown-item" data-sort="most-recent" onclick="setSortOption('most-recent', this)" href="javascript:void(0)">Most
                                 Recent</a>
                         </li>
                         <li>
-                            <a class="dropdown-item" onclick="setSortOption('low-high', this)" href="javascript:void(0)">Price
+                            <a class="dropdown-item" data-sort="low-high" onclick="setSortOption('low-high', this)" href="javascript:void(0)">Price
                                 (low to high)</a>
                         </li>
                         <li>
-                            <a class="dropdown-item" onclick="setSortOption('high-low', this)" href="javascript:void(0)">Price
+                            <a class="dropdown-item" data-sort="high-low" onclick="setSortOption('high-low', this)" href="javascript:void(0)">Price
                                 (high to low)</a>
                         </li>
                         <li>
-                            <a class="dropdown-item" onclick="setSortOption('mileage', this)" href="javascript:void(0)">Mileage
+                            <a class="dropdown-item" data-sort="mileage" onclick="setSortOption('mileage', this)" href="javascript:void(0)">Mileage
                                 (low to high)</a>
                         </li>
                     </ul>
@@ -1009,21 +1009,21 @@ if (!empty($pricetoselected)) {
                         <span class="header-times" data-bs-toggle="dropdown">&times;</span>
                     </li>
                     <li>
-                        <a class="dropdown-item" onclick="setSortOption('newest', this)" href="javascript:void(0)">Most
+                        <a class="dropdown-item" data-sort="most-recent" onclick="setSortOption('most-recent', this)" href="javascript:void(0)">Most
                             Recent</a>
                     </li>
                     <li>
-                        <a class="dropdown-item" onclick="setSortOption('low-high', this)"
+                        <a class="dropdown-item" data-sort="low-high" onclick="setSortOption('low-high', this)"
                             href="javascript:void(0)">Price (low
                             to high)</a>
                     </li>
                     <li>
-                        <a class="dropdown-item" onclick="setSortOption('high-low', this)"
+                        <a class="dropdown-item" data-sort="high-low" onclick="setSortOption('high-low', this)"
                             href="javascript:void(0)">Price
                             (high to low)</a>
                     </li>
                     <li>
-                        <a class="dropdown-item" onclick="setSortOption('mileage', this)"
+                        <a class="dropdown-item" data-sort="mileage" onclick="setSortOption('mileage', this)"
                             href="javascript:void(0)">Mileage
                             (low to high)</a>
                     </li>
@@ -1360,27 +1360,31 @@ if (!empty($pricetoselected)) {
             // 1) UI selection (only one)
             setSelectedSortUI(option, el);
 
-            // 2) Sorting
-            const container = document.getElementById('mobilelayout');
-            if (!container) {
-                console.warn('#mobilelayout not found');
+            // 2) Server-side sort: update hero form sort input and refetch results so order is correct
+            //    across all pages (client-side reorder only sorted current page and was inconsistent).
+            const heroForm = document.getElementById('heroSearchForm');
+            if (heroForm && typeof heroForm._doFilter === 'function') {
+                const sortInput = heroForm.querySelector('input[name="sort"]');
+                if (sortInput) {
+                    sortInput.value = option;
+                    heroForm._doFilter();
+                }
                 return;
             }
 
+            // Fallback: client-side reorder (e.g. when hero form not present)
+            const container = document.getElementById('mobilelayout');
+            if (!container) return;
             const items = Array.from(container.querySelectorAll(':scope > div.my-3'));
             if (!items.length) return;
-
             if (!items[0].dataset.originalIndex) cacheOriginalOrder();
-
             const sorted = items.slice().sort((a, b) => {
                 if (option === 'low-high') return getPriceFromCard(a) - getPriceFromCard(b);
                 if (option === 'high-low') return getPriceFromCard(b) - getPriceFromCard(a);
                 if (option === 'mileage') return getMilesFromCard(a) - getMilesFromCard(b);
-                if (option === 'newest') return Number(a.dataset.originalIndex) - Number(b.dataset
-                    .originalIndex);
+                if (option === 'newest' || option === 'most-recent') return Number(a.dataset.originalIndex) - Number(b.dataset.originalIndex);
                 return 0;
             });
-
             const frag = document.createDocumentFragment();
             sorted.forEach(node => frag.appendChild(node));
             container.appendChild(frag);
@@ -1389,9 +1393,9 @@ if (!empty($pricetoselected)) {
         document.addEventListener('DOMContentLoaded', function() {
             cacheOriginalOrder();
 
-            // default select newest
-            const first = document.querySelector('#sortList .dropdown-item[data-sort="newest"]');
-            if (first) setSelectedSortUI('newest', first);
+            // default select most-recent
+            const first = document.querySelector('#sortList .dropdown-item[data-sort="most-recent"]');
+            if (first) setSelectedSortUI('most-recent', first);
         });
     </script>
 

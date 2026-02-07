@@ -96,31 +96,30 @@ class CarController extends Controller
         if (!empty($validated['sort'])) {
             switch ($validated['sort']) {
                 case 'low-high':
-                    $query->orderBy('price', 'asc'); 
+                    $query->orderBy('price', 'asc')->orderBy('car_id', 'asc');
                     break;
                 case 'high-low':
-                    $query->orderBy('price', 'desc'); 
+                    $query->orderBy('price', 'desc')->orderBy('car_id', 'asc');
                     break;
                 case 'mileage':
-                    $query->orderBy('miles', 'asc'); 
+                    $query->orderBy('miles', 'asc')->orderBy('car_id', 'asc');
                     break;
                 case 'mileage-low':
-                    $query->orderBy('miles', 'desc'); 
+                    $query->orderBy('miles', 'desc')->orderBy('car_id', 'asc');
                     break;
                 case 'newest':
-                    $query->orderBy('year', 'desc');
+                    $query->orderBy('year', 'desc')->orderBy('car_id', 'asc');
                     break;
                 case 'oldest':
-                    $query->orderBy('year', 'asc'); 
+                    $query->orderBy('year', 'asc')->orderBy('car_id', 'asc');
                     break;
                 case 'most-recent':
                 default:
-                    $query->orderBy('created_at', 'desc'); 
+                    $query->orderBy('created_at', 'desc')->orderBy('car_id', 'asc');
                     break;
             }
         } else {
-           
-            $query->inRandomOrder();
+            $query->orderBy('car_id', 'desc');
         }
         $totalCount = (clone $query)->count();
         $perPage = 20;

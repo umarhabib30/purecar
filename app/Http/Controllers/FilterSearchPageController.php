@@ -30,26 +30,26 @@ class FilterSearchPageController extends Controller
         if ($sort && in_array($sort, ['most-recent', 'low-high', 'high-low', 'mileage', 'mileage-low', 'newest', 'oldest'], true)) {
             switch ($sort) {
                 case 'low-high':
-                    $sortQuery->orderBy('price', 'asc');
+                    $sortQuery->orderBy('price', 'asc')->orderBy('car_id', 'asc');
                     break;
                 case 'high-low':
-                    $sortQuery->orderBy('price', 'desc');
+                    $sortQuery->orderBy('price', 'desc')->orderBy('car_id', 'asc');
                     break;
                 case 'mileage':
-                    $sortQuery->orderBy('miles', 'asc');
+                    $sortQuery->orderBy('miles', 'asc')->orderBy('car_id', 'asc');
                     break;
                 case 'mileage-low':
-                    $sortQuery->orderBy('miles', 'desc');
+                    $sortQuery->orderBy('miles', 'desc')->orderBy('car_id', 'asc');
                     break;
                 case 'newest':
-                    $sortQuery->orderBy('year', 'desc');
+                    $sortQuery->orderBy('year', 'desc')->orderBy('car_id', 'asc');
                     break;
                 case 'oldest':
-                    $sortQuery->orderBy('year', 'asc');
+                    $sortQuery->orderBy('year', 'asc')->orderBy('car_id', 'asc');
                     break;
                 case 'most-recent':
                 default:
-                    $sortQuery->orderBy('created_at', 'desc');
+                    $sortQuery->orderBy('created_at', 'desc')->orderBy('car_id', 'asc');
                     break;
             }
         } else {

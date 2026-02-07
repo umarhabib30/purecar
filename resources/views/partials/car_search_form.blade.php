@@ -801,6 +801,7 @@
             </div>
             <input type="hidden" name="seller_type" id="sellertypeInput" value="">
             <input type="hidden" name="advanced" id="advancedInput" value="">
+            <input type="hidden" name="sort" id="sortInput" value="">
         </div>
     </div>
     <div class="filter-actions d-flex align-items-center justify-content-between flex-wrap gap-2 mt-4">
@@ -855,7 +856,7 @@
                 @endif
                 <!-- <button type="button" id="mobileSearchClose" style="border: 0; background: transparent; font-size: 32px; line-height: 1; padding: 0;">&times;</button> -->
             </div>
-            <button type="submit" id="searchButton" class="btn btn-dark search-btn">Search ({{ $totalResults }}
+            <button type="submit" id="searchButton" class="btn btn-dark search-btn">Search ({{ $totalCount ?? $totalResults ?? 0 }}
                 )</button>
         </div>
     </div>
@@ -1024,6 +1025,11 @@
                         return Number.isFinite(num) ? ('Up to ' + num.toLocaleString('en-GB')) : String(
                             v);
                     }
+                },
+                {
+                    param: 'sort',
+                    inputId: 'sortInput',
+                    buttonId: 'sortInput'
                 },
             ];
 
@@ -1214,17 +1220,14 @@
                 const depInput = localForm.querySelector('#' + depInputId);
                 if (depInput) depInput.value = '';
 
-                // reset button label to default text (if it exists)
-                const depBtn = localForm.querySelector(
-                    '.dropdown-toggle[data-bs-toggle="dropdown"][id][data-dropdown], .dropdown-toggle[id]');
-                // We'll set labels via explicit mapping instead (see below).
-
-                // remove selected-option styling for that input across all lists
-                localForm
-                    .querySelectorAll('.dropdown-item.selected-option[data-dd-input="' + depInputId + '"]')
-                    .forEach(function(el) {
-                        el.classList.remove('selected-option');
-                    });
+                // remove selected-option styling for that input (form + owner modals when moved to body)
+                const inForm = localForm.querySelectorAll('.dropdown-item.selected-option[data-dd-input="' + depInputId + '"]');
+                const inOwnerModals = localForm.id
+                    ? document.querySelectorAll('.custom-select-modal[data-owner-form-id="' + localForm.id + '"] .dropdown-item.selected-option[data-dd-input="' + depInputId + '"]')
+                    : [];
+                Array.from(inForm).concat(Array.from(inOwnerModals)).forEach(function(el) {
+                    el.classList.remove('selected-option');
+                });
             }
 
             function resetButtonLabel(localForm, buttonId) {
@@ -1266,16 +1269,21 @@
 
             // visual selection state (keep in sync across desktop + mobile lists)
             if (form) {
-                // clear selection for this specific input across the whole form
-                form.querySelectorAll('.dropdown-item.selected-option[data-dd-input="' + inputId + '"]')
-                    .forEach(function(el) {
-                        el.classList.remove('selected-option');
-                    });
-
-                // apply selection to all matching options (desktop menu + mobile modal list)
+                // Items to update: inside form + inside modals that belong to this form (e.g. moved to body on landing mobile)
+                function itemsForInput(formEl, id) {
+                    const inForm = formEl.querySelectorAll('.dropdown-item[data-dd-input="' + id + '"]');
+                    const inOwnerModals = formEl.id
+                        ? document.querySelectorAll('.custom-select-modal[data-owner-form-id="' + formEl.id + '"] .dropdown-item[data-dd-input="' + id + '"]')
+                        : [];
+                    return Array.from(inForm).concat(Array.from(inOwnerModals));
+                }
+                // clear selection for this specific input
+                itemsForInput(form, inputId).forEach(function(el) {
+                    el.classList.remove('selected-option');
+                });
+                // apply selection to all matching options
                 if (!shouldClear) {
-                    form.querySelectorAll('.dropdown-item[data-dd-input="' + inputId + '"]').forEach(function(
-                        el) {
+                    itemsForInput(form, inputId).forEach(function(el) {
                         const v = String(el.getAttribute('data-dd-value') ?? '');
                         if (v === value) el.classList.add('selected-option');
                     });
@@ -1319,10 +1327,16 @@
             const btnSpan = btn ? (btn.querySelector('.dropdown-text') || btn.querySelector('span')) : null;
             const dropdownRoot = btn ? btn.closest('.dropdown') : null;
             const desktopList = dropdownRoot ? dropdownRoot.querySelector('.dropdown-menu') : null;
-            const mobileList = cfg.modalKey ?
-                form.querySelector('.custom-select-modal[data-modal="' + cfg.modalKey +
-                    '"] .custom-select-list') :
-                null;
+            let mobileList = cfg.modalKey
+                ? form.querySelector('.custom-select-modal[data-modal="' + cfg.modalKey +
+                    '"] .custom-select-list')
+                : null;
+            // When modal was moved to body (landing mobile), find it by owner form id
+            if (!mobileList && cfg.modalKey && form.id) {
+                const movedModal = document.querySelector('.custom-select-modal[data-modal="' +
+                    cfg.modalKey + '"][data-owner-form-id="' + form.id + '"]');
+                mobileList = movedModal ? movedModal.querySelector('.custom-select-list') : null;
+            }
 
             // Enable/disable if configured
             // if (btn && cfg.disableWhenEmpty) {
@@ -1340,11 +1354,14 @@
                 }
 
                 const seen = new Set();
+                // Cascade fields (make/model/variant): only clear when user explicitly changes make/model,
+                // not when facet list changes due to year/price/etc. Otherwise model/variant get disabled incorrectly.
+                const isCascadeField = cfg.inputId === 'makeInput' || cfg.inputId === 'modelInput' || cfg.inputId === 'variantInput';
                 if (selectedValue) {
                     const hasSelected = items.some(function(i) {
                         return String(i.value) === selectedValue;
                     });
-                    if (!hasSelected) {
+                    if (!hasSelected && !isCascadeField) {
                         // Selection is no longer valid under current filters → clear it.
                         if (input) input.value = '';
                         selectedValue = '';
@@ -2015,9 +2032,24 @@
                 // ignore JSON parse errors
             }
 
-            if (didHydrate || !hasInitialFacets) {
+            // After applying facets, re-apply URL params so the form shows the filter values from the
+            // previous page (e.g. landing -> forsale with make/model in URL). applyFacetsToForm
+            // rebuilds lists but can reset labels; re-hydrating restores selected values and button text.
+            if (didHydrate) {
+                hydrateFormFromUrl(form);
+                enforceMakeModelVariantCascade(form);
+            }
+
+            // Do not run initial AJAX when we landed on forsale page with filter params in URL:
+            // the server already rendered the filtered results (e.g. from landing Search -> /searchcar?make=...).
+            // Running postFilterForm here would replace server-rendered HTML and cause a flash / extra request.
+            const hasForsaleGrid = !!document.getElementById('mobilelayout');
+            const skipInitialFilter = hasForsaleGrid && didHydrate;
+            if (!skipInitialFilter && (didHydrate || !hasInitialFacets)) {
                 postFilterForm(form);
             }
+            // Expose so forsale page sort dropdown can trigger server-side sort (no client-side reorder).
+            form._doFilter = function() { postFilterForm(form); };
         });
     });
 </script>
