@@ -1,7 +1,4 @@
-/.env
-/.env.*
 /.idea
-/.vscode
 /.DS_Store
 
 /vendor/
@@ -21,3 +18,4 @@
 # Tests coverage/output
 /coverage
 /reports
+config.bat

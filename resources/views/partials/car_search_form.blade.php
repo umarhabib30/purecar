@@ -1510,7 +1510,7 @@
                     modalKey: 'year-from',
                     clearText: 'Any'
                 }, yearItems, function(v) {
-                    return 'Up to ' + String(v);
+                    return 'From ' + String(v);
                 });
             }
             if (yearToFacet && typeof yearToFacet === 'object') {
