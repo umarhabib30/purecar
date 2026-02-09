@@ -354,7 +354,7 @@ class CarController extends Controller
             // ->get();
             // dd($count);
         // Initial facets for the shared search form partial (cached).
-        $initialFacets = Cache::remember('facets.initial.v3', 600, function () use ($facetService) {
+        $initialFacets = Cache::remember('facets.initial.v4', 600, function () use ($facetService) {
             $statusQuery = $facetService->buildStatusQuery();
             return $facetService->buildFacets($statusQuery, new Request([]), $facetService->allowedFilters());
         });

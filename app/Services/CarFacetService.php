@@ -146,10 +146,11 @@ class CarFacetService
         }, ARRAY_FILTER_USE_KEY);
         $facets['year_to'] = $facets['year_from'];
 
-        // Price breakpoints: 1k-15k in 1k steps, then 20k-120k in 5k steps
+        // Price: predefined breakpoints for speed. Round to display values (14950→20000, 33955→40000).
+        // 1k-10k in 1k steps, then 20k-120k in 10k steps. Only show breakpoints in [min,max] range.
         $pricePoints = array_merge(
-            range(1000, 15000, 1000),
-            range(20000, 120000, 5000)
+            range(1000, 10000, 1000),
+            range(20000, 120000, 10000)
         );
 
         $priceQuery = (clone $statusQuery);
@@ -160,31 +161,34 @@ class CarFacetService
         $minPrice = (clone $basePriceQuery)->min('price');
         $maxPrice = (clone $basePriceQuery)->max('price');
 
-        // Only include price points between min and max in the result set (same behaviour as other fields)
-        $pricePointsFiltered = $pricePoints;
+        $pricePointsFiltered = [];
         if ($minPrice !== null && $maxPrice !== null) {
-            $minPrice = (float) $minPrice;
-            $maxPrice = (float) $maxPrice;
-            $pricePointsFiltered = array_values(array_filter($pricePoints, function ($p) use ($minPrice, $maxPrice) {
-                return $p >= $minPrice && $p <= $maxPrice;
-            }));
-            // When count is 1 (or few), the only car's price may not match a breakpoint (e.g. £5500).
-            // Include at least the smallest breakpoint >= min and largest <= max so price from/to always have options.
-            if ($pricePointsFiltered === []) {
-                $firstAbove = null;
-                $lastBelow = null;
-                foreach ($pricePoints as $p) {
-                    if ($p >= $minPrice && $firstAbove === null) {
-                        $firstAbove = $p;
-                    }
-                    if ($p <= $maxPrice) {
-                        $lastBelow = $p;
-                    }
+            $minP = (float) $minPrice;
+            $maxP = (float) $maxPrice;
+            // Find smallest breakpoint >= min and largest breakpoint >= max (ceil to breakpoints)
+            $ceilMin = null;
+            $ceilMax = null;
+            foreach ($pricePoints as $p) {
+                if ($p >= $minP && $ceilMin === null) {
+                    $ceilMin = $p;
                 }
-                $pricePointsFiltered = array_values(array_unique(array_filter([$firstAbove, $lastBelow])));
+                if ($p >= $maxP && $ceilMax === null) {
+                    $ceilMax = $p;
+                }
             }
-        } elseif ($minPrice === null || $maxPrice === null) {
-            $pricePointsFiltered = [];
+            // Fallbacks when prices exceed our range (e.g. cars above £120k) so we always show options
+            if ($ceilMin === null) {
+                $ceilMin = $pricePoints[0] ?? 1000;
+            }
+            if ($ceilMax === null) {
+                $ceilMax = end($pricePoints) ?: 120000;
+            }
+            // Include breakpoints from ceil(min) to ceil(max) - single car at 20000 shows only 20000
+            if ($ceilMin !== null && $ceilMax !== null) {
+                $pricePointsFiltered = array_values(array_filter($pricePoints, function ($p) use ($ceilMin, $ceilMax) {
+                    return $p >= $ceilMin && $p <= $ceilMax;
+                }));
+            }
         }
 
         $countTo = [];
@@ -193,6 +197,17 @@ class CarFacetService
             $countTo[$p] = (clone $basePriceQuery)->where('price', '<=', $p)->count();
             $countFrom[$p] = (clone $basePriceQuery)->where('price', '>=', $p)->count();
         }
+
+        // Only keep breakpoints where count_to changes (e.g. 1 car at 1k, 2 at 4k → show 1k and 4k only).
+        // Always include the last (max) breakpoint so ceiling(maxPrice) is shown (e.g. 33955→40000).
+        $prevCountTo = null;
+        $lastP = end($pricePointsFiltered);
+        $pricePointsFiltered = array_values(array_filter($pricePointsFiltered, function ($p) use ($countTo, &$prevCountTo, $lastP) {
+            $c = $countTo[$p];
+            $keep = $prevCountTo === null || $c !== $prevCountTo || $p === $lastP;
+            $prevCountTo = $c;
+            return $keep;
+        }));
 
         $facets['price'] = collect($pricePointsFiltered)->map(function ($value) use ($countTo, $countFrom) {
             return [
