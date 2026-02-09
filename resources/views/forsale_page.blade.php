@@ -1119,7 +1119,7 @@ if (!empty($pricetoselected)) {
                                 @foreach (array_reverse($year_ranges) as $year)
                                     <option value="{{ $year }}"
                                         {{ !empty($yearfromselected) && (string) $year === (string) $yearfromselected ? 'selected' : '' }}>
-                                        Up to {{ $year }} ({{ $year_counts_from[$year] ?? ($year_counts[$year] ?? 0) }})
+                                        From {{ $year }} ({{ $year_counts_from[$year] ?? ($year_counts[$year] ?? 0) }})
                                     </option>
                                 @endforeach
                             </select>

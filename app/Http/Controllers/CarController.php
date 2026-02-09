@@ -77,12 +77,19 @@ class CarController extends Controller
         if (!empty($validated['price_from']) || !empty($validated['price_to'])) {
             $query->where('price', '>', 0);
         }
-        if (!empty($validated['price_from'])) {
-            $query->where('price', '>=', $validated['price_from']);
+        if (!empty($validated['price_from']) && !empty($validated['price_to']) && (float)$validated['price_from'] === (float)$validated['price_to']) {
+            $val = (float) $validated['price_from'];
+            $next = $facetService->getNextPriceBreakpoint($val);
+            $query->where('price', '>=', $val)->where('price', '<', $next);
+        } else {
+            if (!empty($validated['price_from'])) {
+                $query->where('price', '>=', $validated['price_from']);
+            }
+            if (!empty($validated['price_to'])) {
+                $query->where('price', '<=', $validated['price_to']);
+            }
         }
-        if (!empty($validated['price_to'])) {
-            $query->where('price', '<=', $validated['price_to']);
-        }if (!empty($validated['keyword'])) {
+        if (!empty($validated['keyword'])) {
             $keyword = $validated['keyword'];
             $query->where(function ($q) use ($keyword) {
                 $q->where('make', 'like', '%' . $keyword . '%')
@@ -154,45 +161,55 @@ class CarController extends Controller
         $currentYear = (int) date('Y');
         $maxYear = max($currentYear, 2026);
         $year_ranges = range(2000, $maxYear);
-                    
-        $year_counts = [];
-        foreach ($year_ranges as $year) {
-            $year_counts[$year] = Car::where('year', $year)
-                ->whereHas('advert', function ($query) {
-                    $query->where('status', 'active');
-                })
-                ->count();
-        }
 
-        $year_counts_to = [];
-        $running_year_total = 0;
-        foreach ($year_ranges as $year) {
-            $running_year_total += (int) ($year_counts[$year] ?? 0);
-            $year_counts_to[$year] = $running_year_total;
-        }
+        $allowedFilters = $facetService->allowedFilters();
+        $hasFilterContext = collect($allowedFilters)->contains(fn ($key) => $request->filled($key));
 
-        $year_counts_from = $year_counts_to;
+        if ($hasFilterContext) {
+            $statusQuery = $facetService->buildStatusQuery();
+            $contextualFacets = $facetService->buildFacets($statusQuery, $request, $allowedFilters);
+            $price_counts = $contextualFacets['price'] ?? [];
+            $year_counts_from = $contextualFacets['year_from'] ?? [];
+            $year_counts_to = $contextualFacets['year_to'] ?? [];
+            $year_ranges = array_keys($year_counts_from);
+            sort($year_ranges, SORT_NUMERIC);
+            $year_counts = [];
+            $search_field = $this->searchFieldFromFacets($contextualFacets);
+            $initialFacets = $contextualFacets;
+        } else {
+            $year_counts = [];
+            foreach ($year_ranges as $year) {
+                $year_counts[$year] = Car::where('year', $year)
+                    ->whereHas('advert', function ($query) {
+                        $query->where('status', 'active');
+                    })
+                    ->count();
+            }
+            $year_counts_to = [];
+            $running_year_total = 0;
+            foreach ($year_ranges as $year) {
+                $running_year_total += (int) ($year_counts[$year] ?? 0);
+                $year_counts_to[$year] = $running_year_total;
+            }
+            $year_counts_from = $year_counts_to;
 
-        // Price breakpoints: 1k-15k in 1k steps, then 20k-120k in 5k steps
-        $pricePoints = array_merge(
-            range(1000, 15000, 1000),
-            range(20000, 120000, 5000)
-        );
-
-        $basePriceQuery = (clone $facetService->buildStatusQuery())->whereNotNull('price')->where('price', '>', 0);
-
-        $price_counts = [];
-        foreach ($pricePoints as $p) {
-            $cTo = (clone $basePriceQuery)->where('price', '<=', $p)->count();
-            $cFrom = (clone $basePriceQuery)->where('price', '>=', $p)->count();
-            $price_counts[] = [
-                'min' => $p,
-                'max' => $p,
-                'count' => $cTo,
-                'count_to' => $cTo,
-                'count_from' => $cFrom,
-            ];
-        }
+            $pricePoints = array_merge(
+                range(1000, 15000, 1000),
+                range(20000, 120000, 5000)
+            );
+            $basePriceQuery = (clone $facetService->buildStatusQuery())->whereNotNull('price')->where('price', '>', 0);
+            $price_counts = [];
+            foreach ($pricePoints as $p) {
+                $cTo = (clone $basePriceQuery)->where('price', '<=', $p)->count();
+                $cFrom = (clone $basePriceQuery)->where('price', '>=', $p)->count();
+                $price_counts[] = [
+                    'min' => $p,
+                    'max' => $p,
+                    'count' => $cTo,
+                    'count_to' => $cTo,
+                    'count_from' => $cFrom,
+                ];
+            }
         $miles_ranges = [
             ['min' => 0, 'max' => 10000],
             ['min' => 10000, 'max' => 20000],
@@ -358,6 +375,7 @@ class CarController extends Controller
             $statusQuery = $facetService->buildStatusQuery();
             return $facetService->buildFacets($statusQuery, new Request([]), $facetService->allowedFilters());
         });
+        }
         $totalResults = (clone $facetService->buildStatusQuery())->count();
         return view('forsale_page', compact(
             'cars', 'count', 'search_field', 'makeselected', 'fuel_typeselected',
@@ -369,8 +387,36 @@ class CarController extends Controller
             'initialFacets', 'totalResults'
         ));
     }
- 
- 
+
+    /**
+     * Build search_field structure for the forsale view from facets (key => count arrays).
+     */
+    private function searchFieldFromFacets(array $facets): array
+    {
+        $keys = ['make', 'model', 'variant', 'fuel_type', 'body_type', 'engine_size', 'doors', 'colors', 'gear_box', 'seller_type'];
+        $search_field = [];
+        foreach ($keys as $key) {
+            $arr = $facets[$key] ?? [];
+            if ($key === 'seller_type') {
+                $search_field[$key] = collect($arr)->map(function ($c, $k) {
+                    $label = match ((string) $k) {
+                        'private_seller' => 'Private',
+                        'car_dealer' => 'Dealer',
+                        default => $k,
+                    };
+                    return (object) ['seller_type' => $label, 'count' => $c];
+                })->values()->all();
+            } else {
+                $search_field[$key] = collect($arr)->map(fn ($c, $k) => (object) [$key => $k, 'count' => $c])->values()->all();
+            }
+        }
+        $search_field['year'] = [];
+        $search_field['price'] = [];
+        $search_field['miles'] = [];
+        return $search_field;
+    }
+
+
 public function getFilteredFields(Request $request)
 {
   
